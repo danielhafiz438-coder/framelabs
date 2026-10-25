@@ -41,6 +41,7 @@
       </div>
       <div class="preview-caption"><span id="photo-name">Foto contoh · Sebastien Gabriel</span><span id="dimensions">Memuatkan…</span></div>
       <div class="photo-actions"><button id="upload-main" class="button secondary"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></svg>Ganti foto</button><button id="use-demo" class="text-button">Guna foto contoh</button><span id="save-state" class="save-state" role="status">Tetapan disimpan automatik</span></div>
+      <button id="batch-open" class="text-button batch-entry">Banyak foto? Buka batch processing</button>
       <p id="status" class="status" role="status" aria-live="polite">Pilih foto sendiri atau cuba editor dengan foto contoh.</p>
       <p id="error" class="error" role="alert" hidden></p>
     </section>
@@ -79,12 +80,28 @@
           <a id="export-link" class="export-link" hidden>Simpan / buka hasil sekali lagi</a>
         </fieldset>
       </form>
+      <section class="batch-section" aria-labelledby="batch-title">
+        <h2 id="batch-title">Batch processing</h2>
+        <p class="helper">Pakai template dan tetapan semasa pada banyak foto. Maksimum 30 foto / 300 MB, diproses satu demi satu.</p>
+        <label class="field-label" for="batch-metadata">Maklumat kamera untuk batch</label>
+        <select id="batch-metadata"><option value="auto">Auto EXIF setiap foto</option><option value="editor">Guna maklumat editor untuk semua</option></select>
+        <p class="helper" id="batch-mode-help">Jika EXIF tiada, maklumat kamera dibiarkan kosong. Kapsyen dan logo sendiri ikut editor.</p>
+        <div class="batch-actions"><button type="button" id="batch-select" class="button secondary">Pilih banyak foto</button><button type="button" id="batch-clear" class="text-button" disabled>Kosongkan senarai</button></div>
+        <p id="batch-count" class="helper">Belum ada foto dipilih.</p>
+        <ol id="batch-list" class="batch-list" aria-label="Senarai foto batch"></ol>
+        <progress id="batch-progress" max="1" value="0" aria-label="Kemajuan batch" hidden></progress>
+        <p id="batch-status" class="helper" role="status" aria-live="polite">Senarai batch hanya untuk sesi ini; tiada foto dihantar ke server.</p>
+        <button type="button" id="batch-run" class="button primary full-width" disabled>Proses & download ZIP</button>
+        <button type="button" id="batch-cancel" class="button secondary full-width" hidden>Hentikan batch</button>
+        <a id="batch-result" class="export-link" hidden>Download ZIP hasil batch</a>
+      </section>
       <details class="storage-details"><summary>Simpanan & privasi</summary><p>Tetapan, logo dan salinan foto (maksimum 2048 px) disimpan dalam localStorage browser ini. Foto asal digunakan sehingga halaman ditutup. Selepas dibuka semula, eksport menggunakan salinan yang disimpan.</p><p>JPG, PNG dan WebP disokong. HEIC bergantung pada browser; jika gagal, tukarkan kepada JPG dahulu. GPS tidak dipaparkan atau dimasukkan dalam hasil eksport.</p><button type="button" id="clear-storage" class="text-button danger">Padam simpanan peranti</button></details>
     </aside>
   </main>
   <footer class="footer"><span>FRAMELABS <span class="footer-divider">/</span> Foto kau. Bingkai kau.</span><span>Diproses dalam browser · Tanpa login</span></footer>
   <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" hidden>
   <input id="logo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+  <input id="batch-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple hidden>
   <dialog id="clear-dialog"><h2>Padam simpanan peranti?</h2><p>Tetapan, salinan foto dan logo FRAMELABS dalam browser ini akan dipadam. Fail asal dalam peranti tidak terjejas.</p><div class="dialog-actions"><button class="button secondary" id="cancel-clear">Batal</button><button class="button primary" id="confirm-clear">Padam simpanan</button></div></dialog>
   <noscript>Aktifkan JavaScript untuk mengedit dan mengeksport foto. Semua pemprosesan berlaku dalam browser.</noscript>
 </body>

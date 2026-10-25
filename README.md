@@ -21,6 +21,16 @@ Choose a photo (or drop it into the window), select a template, edit the frame/b
 
 EXIF camera make/model, focal length, aperture, shutter and ISO are read locally when present. Missing metadata is left blank, never inferred from image pixels. Demo specifications are explicitly illustrative. The sample photograph is by [Sebastien Gabriel on Unsplash](https://unsplash.com/photos/landscape-photography-of-seashore-Hn-vG1gwbUk), used under the [Unsplash License](https://unsplash.com/license). It is bundled locally; opening the app does not contact Unsplash.
 
+## Batch processing
+
+Use **Banyak foto? Buka batch processing** below the preview, or **Pilih banyak foto** in the inspector. Select up to 30 files (300 MB combined, 40 MB per file). Dropping multiple files also adds them to the batch. The queue can be edited before processing.
+
+The current template, frame settings, caption, custom logo, format and resolution are captured when processing starts. **Auto EXIF setiap foto** reads each file independently and leaves missing camera values blank. **Guna maklumat editor untuk semua** explicitly applies the editor's camera values to every output. A batch never overwrites the editor's current photo or camera fields.
+
+Files are decoded and rendered sequentially. A corrupt or unsupported file is reported and skipped. Cancel stops after the current operation; completed outputs remain available in a partial ZIP. The ZIP contains individually named images and `batch-report.txt`; same-name input files cannot overwrite each other. Output total is capped at 150 MB; reduce resolution or batch size when reached. ZIP STORE avoids recompressing already-compressed PNG/JPEG data.
+
+Batch files and result ZIP live only in memory for the current page session. They are not uploaded or saved to localStorage; only the selected metadata mode and existing editor settings persist. Reloading removes the batch queue and ZIP, keeping browser storage bounded.
+
 ## Storage and privacy
 
 - All editing and export happen in the browser. The hosting server only serves static app files. User photos and logos are never transmitted by the app.

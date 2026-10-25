@@ -1,7 +1,7 @@
 import { mkdir, cp, access, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 const root=fileURLToPath(new URL('../',import.meta.url)), dist=new URL('../dist/',import.meta.url);
-const files=['index.html','style.css','app.js','core.js','renderer.js','.nojekyll','assets','vendor'];
+const files=['index.html','style.css','app.js','core.js','renderer.js','batch.js','.nojekyll','assets','vendor'];
 await mkdir(dist,{recursive:true});
 for(const name of files){await access(new URL(`../${name}`,import.meta.url));await cp(new URL(`../${name}`,import.meta.url),new URL(name,dist),{recursive:true});}
 const html=await readFile(new URL('index.html',dist),'utf8');

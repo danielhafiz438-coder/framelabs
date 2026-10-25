@@ -46,7 +46,7 @@ export function parseProject(raw) {
     return { template: Object.hasOwn(TEMPLATE_NAMES, p.template) ? p.template : 'soft', styles,
       photo: validImage(p.photo, 2300000), logo: validImage(p.logo, 650000),
       photoName: typeof p.photoName === 'string' ? p.photoName.slice(0,180) : 'Foto tersimpan',
-      exifFound: p.exifFound === true };
+      exifFound: p.exifFound === true, batchMode: p.batchMode === 'editor' ? 'editor' : 'auto' };
   } catch { return null; }
 }
 export function saveProject(storage, project) {
