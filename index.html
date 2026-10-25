@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#191a18">
+  <meta name="description" content="Empat template bingkai foto. Edit dan simpan terus pada peranti, tanpa akaun atau upload ke server.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>FRAMELABS · Studio bingkai foto</title>
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./vendor/exifr-7.1.3.js" defer></script>
+  <script src="./app.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#editor">Terus ke editor</a>
+  <header class="topbar">
+    <a class="wordmark" href="./" aria-label="FRAMELABS, studio bingkai foto"><img src="./assets/favicon.svg" alt="" width="32" height="32"><span>FRAME<span class="wordmark-light">LABS</span></span></a>
+    <span class="header-caption">STUDIO BINGKAI FOTO</span>
+    <div class="header-actions"><button id="upload-top" class="button secondary"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4M4 16v4h16v-4"/></svg><span>Pilih foto</span></button><button id="download-top" class="button primary"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v12m-4-4 4 4 4-4M4 17v3h16v-3"/></svg><span>Download</span></button></div>
+  </header>
+
+  <main class="studio" id="editor">
+    <aside class="template-panel" aria-label="Pilihan template">
+      <div class="panel-heading"><h1>Template</h1><span class="count">04</span></div>
+      <p class="panel-intro">Satu foto. Empat gaya.</p>
+      <div id="templates" class="template-list">
+        <button class="template selected" data-template="soft" aria-pressed="true"><canvas width="240" height="164" aria-hidden="true"></canvas><span class="template-caption"><span><b>Soft Frame</b><small>Bingkai kabur</small></span><span class="template-number">01</span></span></button>
+        <button class="template" data-template="overlay" aria-pressed="false"><canvas width="240" height="164" aria-hidden="true"></canvas><span class="template-caption"><span><b>On Photo</b><small>Watermark atas foto</small></span><span class="template-number">02</span></span></button>
+        <button class="template" data-template="rounded" aria-pressed="false"><canvas width="240" height="164" aria-hidden="true"></canvas><span class="template-caption"><span><b>Rounded Blur</b><small>Bucu bulat, latar kabur</small></span><span class="template-number">03</span></span></button>
+        <button class="template" data-template="white" aria-pressed="false"><canvas width="240" height="164" aria-hidden="true"></canvas><span class="template-caption"><span><b>Gallery White</b><small>Bingkai putih klasik</small></span><span class="template-number">04</span></span></button>
+      </div>
+      <div class="local-note"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><div><b>Hanya di peranti ini</b><p>Tanpa akaun. Foto tidak dihantar ke server.</p></div></div>
+    </aside>
+
+    <section class="preview-panel" aria-label="Pratonton foto">
+      <div class="preview-toolbar"><div><span class="eyebrow">PRATONTON</span><span id="current-template">Soft Frame</span></div><button id="compare" class="text-button" aria-pressed="false">Lihat asal</button></div>
+      <div class="preview-stage" id="drop-zone">
+        <div class="canvas-wrap"><canvas id="preview" width="1200" height="850" role="img" aria-label="Pratonton foto dengan bingkai Soft Frame"></canvas></div>
+        <div class="drop-overlay" aria-hidden="true">Lepaskan foto di sini</div>
+      </div>
+      <div class="preview-caption"><span id="photo-name">Foto contoh · Sebastien Gabriel</span><span id="dimensions">Memuatkan…</span></div>
+      <div class="photo-actions"><button id="upload-main" class="button secondary"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></svg>Ganti foto</button><button id="use-demo" class="text-button">Guna foto contoh</button><span id="save-state" class="save-state" role="status">Tetapan disimpan automatik</span></div>
+      <p id="status" class="status" role="status" aria-live="polite">Pilih foto sendiri atau cuba editor dengan foto contoh.</p>
+      <p id="error" class="error" role="alert" hidden></p>
+    </section>
+
+    <aside class="inspector" aria-label="Tetapan bingkai">
+      <div class="inspector-title"><h2>Sesuaikan</h2><button id="reset" class="text-button">Reset gaya</button></div>
+      <form id="settings" autocomplete="off">
+        <fieldset class="settings-section"><legend>Bingkai</legend>
+          <label class="field-label" for="ratio">Nisbah foto</label><select id="ratio" name="ratio"><option value="original">Asal · tanpa crop</option><option value="3:2">3:2 · Landskap</option><option value="4:3">4:3 · Klasik</option><option value="1:1">1:1 · Petak</option><option value="4:5">4:5 · Potret</option><option value="9:16">9:16 · Story</option></select>
+          <div class="range-field" data-control="padding"><label for="padding">Ketebalan bingkai <output for="padding" id="padding-value"></output></label><input id="padding" name="padding" type="range" min="2" max="14" step="0.5"></div>
+          <div class="range-field" data-control="radius"><label for="radius">Bucu luar <output for="radius" id="radius-value"></output></label><input id="radius" name="radius" type="range" min="0" max="8" step="0.5"></div>
+          <div class="range-field" data-control="innerRadius"><label for="innerRadius">Bucu foto <output for="innerRadius" id="innerRadius-value"></output></label><input id="innerRadius" name="innerRadius" type="range" min="0" max="10" step="0.5"></div>
+          <div class="range-field" data-control="blur"><label for="blur">Kabur latar <output for="blur" id="blur-value"></output></label><input id="blur" name="blur" type="range" min="0" max="32" step="1"></div>
+          <div class="range-field" data-control="darkness"><label for="darkness">Gelap bahagian bawah <output for="darkness" id="darkness-value"></output></label><input id="darkness" name="darkness" type="range" min="35" max="95" step="1"></div>
+          <label class="color-field" data-control="frameColor" for="frameColor"><span>Warna bingkai</span><input id="frameColor" name="frameColor" type="color" value="#ffffff"></label>
+          <label class="color-field" for="textColor"><span>Warna tulisan</span><input id="textColor" name="textColor" type="color" value="#ffffff"></label>
+        </fieldset>
+        <fieldset class="settings-section"><legend>Identiti foto</legend>
+          <label class="field-label" for="brand">Jenama</label><select id="brand" name="brand"><option value="IPHONE">iPhone</option><option value="FUJIFILM">Fujifilm</option><option value="DJI">DJI</option><option value="SONY">Sony</option><option value="CANON">Canon</option><option value="NIKON">Nikon</option><option value="LUMIX">Lumix</option><option value="LEICA">Leica</option><option value="HASSELBLAD">Hasselblad</option><option value="CUSTOM">Teks sendiri</option></select>
+          <label class="field-label" for="camera">Nama kamera / tajuk</label><input id="camera" name="camera" type="text" maxlength="64" placeholder="Contoh: IPHONE 16 PRO">
+          <div class="logo-row"><button id="upload-logo" class="button secondary" type="button">Tambah logo sendiri</button><button id="remove-logo" class="text-button" type="button" hidden>Buang logo</button></div>
+          <p class="helper">Logo PNG, JPG atau WebP. PNG lutsinar paling sesuai.</p>
+          <label class="check-field"><input id="showBrand" name="showBrand" type="checkbox">Paparkan jenama / logo</label>
+          <div class="range-field"><label for="textSize">Saiz tulisan <output for="textSize" id="textSize-value"></output></label><input id="textSize" name="textSize" type="range" min="70" max="160" step="5"></div>
+          <label class="field-label" for="caption">Kapsyen <span>(pilihan)</span></label><input id="caption" name="caption" type="text" maxlength="90" placeholder="Cerita di sebalik gambar…">
+        </fieldset>
+        <fieldset class="settings-section"><legend>Maklumat kamera</legend>
+          <p class="helper" id="exif-status">Foto contoh menggunakan maklumat ilustrasi. Semua boleh diedit.</p>
+          <label class="check-field"><input id="showExif" name="showExif" type="checkbox">Paparkan tetapan kamera</label>
+          <div class="field-grid"><div><label class="field-label" for="focal">Focal length</label><input id="focal" name="focal" type="text" maxlength="20" placeholder="85mm"></div><div><label class="field-label" for="aperture">Aperture</label><input id="aperture" name="aperture" type="text" maxlength="20" placeholder="f/4"></div><div><label class="field-label" for="shutter">Shutter</label><input id="shutter" name="shutter" type="text" maxlength="20" placeholder="1/250s"></div><div><label class="field-label" for="iso">ISO</label><input id="iso" name="iso" type="text" maxlength="20" placeholder="400"></div></div>
+        </fieldset>
+        <fieldset class="settings-section export-section"><legend>Simpan hasil</legend>
+          <div class="field-grid"><div><label class="field-label" for="format">Format</label><select id="format" name="format"><option value="png">PNG</option><option value="jpeg">JPEG</option></select></div><div><label class="field-label" for="resolution">Sisi terpanjang</label><select id="resolution" name="resolution"><option value="original">Ikut foto</option><option value="2048">2048 px</option><option value="4096">4096 px</option></select></div></div>
+          <p class="helper">PNG kekalkan sudut lutsinar. JPEG gunakan latar hitam. Eksport maksimum 4096 px.</p>
+          <button id="download" type="button" class="button primary full-width">Download gambar</button>
+          <a id="export-link" class="export-link" hidden>Simpan / buka hasil sekali lagi</a>
+        </fieldset>
+      </form>
+      <details class="storage-details"><summary>Simpanan & privasi</summary><p>Tetapan, logo dan salinan foto (maksimum 2048 px) disimpan dalam localStorage browser ini. Foto asal digunakan sehingga halaman ditutup. Selepas dibuka semula, eksport menggunakan salinan yang disimpan.</p><p>JPG, PNG dan WebP disokong. HEIC bergantung pada browser; jika gagal, tukarkan kepada JPG dahulu. GPS tidak dipaparkan atau dimasukkan dalam hasil eksport.</p><button type="button" id="clear-storage" class="text-button danger">Padam simpanan peranti</button></details>
+    </aside>
+  </main>
+  <footer class="footer"><span>FRAMELABS <span class="footer-divider">/</span> Foto kau. Bingkai kau.</span><span>Diproses dalam browser · Tanpa login</span></footer>
+  <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" hidden>
+  <input id="logo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+  <dialog id="clear-dialog"><h2>Padam simpanan peranti?</h2><p>Tetapan, salinan foto dan logo FRAMELABS dalam browser ini akan dipadam. Fail asal dalam peranti tidak terjejas.</p><div class="dialog-actions"><button class="button secondary" id="cancel-clear">Batal</button><button class="button primary" id="confirm-clear">Padam simpanan</button></div></dialog>
+  <noscript>Aktifkan JavaScript untuk mengedit dan mengeksport foto. Semua pemprosesan berlaku dalam browser.</noscript>
+</body>
+</html>

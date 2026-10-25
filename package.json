@@ -1,0 +1,14 @@
+{
+  "name": "framelabs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A private, browser-local photo framing studio. Four templates, no account.",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check app.js && node --check core.js && node --check renderer.js && node --test tests/*.test.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
