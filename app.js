@@ -9,6 +9,7 @@ let template=saved?.template||'soft', styles=saved?.styles||freshStyles();
 let photo=null, logo=null, photoData=saved?.photo||null, logoData=saved?.logo||null;
 let photoName=saved?.photoName||'Foto contoh · Sebastien Gabriel', isDemo=!photoData, exifFound=saved?.exifFound||false;
 let comparing=false, busy=false, importing=false, saveTimer, frame=0, exportURL=null, restored=Boolean(photoData);
+const brandLogos={};
 const sharedKeys=new Set(['brand','camera','caption','focal','aperture','shutter','iso','showExif','showBrand']);
 const style=()=>styles[template];
 function message(text) {$('status').textContent=text;}
@@ -73,7 +74,7 @@ function renderPreview() {
   if(!photo)return;
   if(comparing) {
     const k=1400/Math.max(photo.naturalWidth,photo.naturalHeight);preview.width=Math.round(photo.naturalWidth*k);preview.height=Math.round(photo.naturalHeight*k);preview.getContext('2d').drawImage(photo,0,0,preview.width,preview.height);
-  } else render(preview,photo,style(),template,{logo});
+  } else render(preview,photo,style(),template,{logo,brandLogo:brandLogos[style().brand]});
   preview.setAttribute('aria-label',comparing?'Foto asal tanpa bingkai':`Pratonton foto dengan bingkai ${TEMPLATE_NAMES[template]}`);
   const size=dimensions();$('dimensions').textContent=`${size.width} × ${size.height} px`;
   $('photo-name').textContent=restored?`${photoName} · salinan tersimpan`:photoName;
@@ -82,7 +83,7 @@ function renderThumbnails() {
   if(!photo)return;
   for(const button of document.querySelectorAll('[data-template]')) {
     const target=button.querySelector('canvas'),tmp=document.createElement('canvas'),key=button.dataset.template;
-    render(tmp,photo,styles[key],key,{maxSide:420,logo});
+    render(tmp,photo,styles[key],key,{maxSide:420,logo,brandLogo:brandLogos[styles[key].brand]});
     target.width=280;target.height=170;const ctx=target.getContext('2d');ctx.fillStyle='#151614';ctx.fillRect(0,0,280,170);
     const scale=Math.min(256/tmp.width,146/tmp.height);ctx.drawImage(tmp,(280-tmp.width*scale)/2,(170-tmp.height*scale)/2,tmp.width*scale,tmp.height*scale);
   }
@@ -165,7 +166,7 @@ async function download() {
   try {
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     const s={...style()}, chosen=template, chosenPhoto=photo, chosenLogo=logo,size=dimensions(),canvas=document.createElement('canvas');
-    render(canvas,chosenPhoto,s,chosen,{...size,logo:chosenLogo,jpeg:s.format==='jpeg'});
+    render(canvas,chosenPhoto,s,chosen,{...size,logo:chosenLogo,brandLogo:brandLogos[s.brand],jpeg:s.format==='jpeg'});
     const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Eksport gagal. Cuba saiz 2048 px.')),`image/${s.format}`,.95));
     if(!blob.size)throw new Error('Hasil kosong. Cuba saiz 2048 px.');
     discardExport();exportURL=URL.createObjectURL(blob);
@@ -192,6 +193,7 @@ window.addEventListener('pagehide',()=>{if(saveTimer)persist();});
 async function init() {
   setBusy(true);syncForm();
   try {
+    await Promise.all(Object.entries({IPHONE:'apple',DJI:'dji',FUJIFILM:'fujifilm'}).map(async([key,file])=>{try{brandLogos[key]=await loadImage(`./assets/brands/${file}.svg`);}catch{ /* The camera name remains usable if a bundled logo cannot load. */ }}));
     if(logoData)try{logo=await loadImage(logoData);}catch{logoData=null;}
     if(photoData) {
       try{photo=await loadImage(photoData);message('Projek dibuka semula daripada peranti. Eksport menggunakan salinan foto tersimpan.');}

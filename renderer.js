@@ -1,6 +1,14 @@
 import { layoutFor, cropRect } from './core.js';
 
 const blurCache = new WeakMap();
+const tintCache = new WeakMap();
+function tintLogo(img,color) {
+  if(!tintCache.has(img))tintCache.set(img,new Map());
+  const cache=tintCache.get(img);if(cache.has(color))return cache.get(color);
+  const c=document.createElement('canvas');c.width=480;c.height=Math.max(1,Math.round(480*img.naturalHeight/img.naturalWidth));
+  const ctx=c.getContext('2d');ctx.drawImage(img,0,0,c.width,c.height);ctx.globalCompositeOperation='source-in';ctx.fillStyle=color;ctx.fillRect(0,0,c.width,c.height);
+  if(cache.size>=8)cache.clear();cache.set(color,c);return c;
+}
 function roundedPath(ctx,x,y,w,h,r,begin=true) {
   const v = Math.min(Math.max(0,r),w/2,h/2);
   if(begin) ctx.beginPath(); ctx.moveTo(x+v,y); ctx.lineTo(x+w-v,y); ctx.quadraticCurveTo(x+w,y,x+w,y+v);
@@ -46,9 +54,13 @@ function fitText(ctx,text,maxWidth,size,weight='400',family='system-ui, sans-ser
 function detailText(s) {
   return [s.focal,s.aperture,s.shutter,s.iso ? `ISO ${s.iso.replace(/^ISO\s*/i,'')}` : ''].filter(Boolean).join('   |   ');
 }
-function brandLine(ctx,s,logo,x,y,maxWidth,size) {
-  const text = s.camera || (s.brand==='CUSTOM' ? '' : s.brand);
-  const logoH=size*1.35, logoW=logo ? Math.min(size*4.5,logoH*(logo.naturalWidth/logo.naturalHeight)) : 0;
+function brandLine(ctx,s,customLogo,builtinLogo,x,y,maxWidth,size) {
+  const logo=customLogo||(builtinLogo?tintLogo(builtinLogo,s.textColor):null);
+  let text = s.camera || (s.brand==='CUSTOM' ? '' : s.brand);
+  if(builtinLogo&&!customLogo&&s.brand!=='IPHONE'&&text.toUpperCase()===s.brand)text='';
+  const maxLogoWidth=builtinLogo&&!customLogo&&s.brand==='FUJIFILM'?size*5.4:size*4.5;
+  const aspect=logo ? (logo.naturalWidth||logo.width)/(logo.naturalHeight||logo.height):1;
+  const logoH=logo?Math.min(size*1.35,maxLogoWidth/aspect):0, logoW=logoH*aspect;
   fitText(ctx,text,maxWidth-logoW-(logo&&text?24:0),size,'750');
   const textW=ctx.measureText(text).width, total=textW+logoW+(logo&&text?24:0);
   const left=x-total/2;
@@ -84,7 +96,7 @@ export function render(canvas,img,settings,template,options={}) {
   const cy=template==='overlay' ? l.height-Math.max(50,50*size)-block/2 : l.pad+l.photoH+(l.footer+l.pad)/2;
   rows.forEach((row,index)=>{
     const y=cy-block/2+index*gap,maxWidth=l.photoW*.9;
-    if(row==='brand')brandLine(ctx,s,options.logo,l.width/2,y,maxWidth,brandSize);
+    if(row==='brand')brandLine(ctx,s,options.logo,options.brandLogo,l.width/2,y,maxWidth,brandSize);
     else {const text=row==='details'?detailText(s):s.caption;fitText(ctx,text,maxWidth,row==='details'?detailSize:captionSize,'400',row==='details'?'Consolas, monospace':'system-ui, sans-serif');ctx.fillText(text,l.width/2,y);}
   });
   ctx.restore();return {width,height,layout:l};

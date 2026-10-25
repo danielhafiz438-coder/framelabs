@@ -17,7 +17,7 @@ Open http://127.0.0.1:4173. `dist/` contains the deployable static site. `.githu
 
 ## Use
 
-Choose a photo (or drop it into the window), select a template, edit the frame/brand/camera details and download PNG or JPEG. Template settings are remembered separately. Camera information and captions follow the current photo across all four templates. Upload a raster logo to use your own mark; bundled brand names are text, not extracted manufacturer logo assets.
+Choose a photo (or drop it into the window), select a template, edit the frame/brand/camera details and download PNG or JPEG. Template settings are remembered separately. Camera information and captions follow the current photo across all four templates. Apple, DJI and Fujifilm logos are bundled locally; other brands use text. Upload a raster logo to use your own mark. No assets were extracted from the reference app.
 
 EXIF camera make/model, focal length, aperture, shutter and ISO are read locally when present. Missing metadata is left blank, never inferred from image pixels. Demo specifications are explicitly illustrative. The sample photograph is by [Sebastien Gabriel on Unsplash](https://unsplash.com/photos/landscape-photography-of-seashore-Hn-vG1gwbUk), used under the [Unsplash License](https://unsplash.com/license). It is bundled locally; opening the app does not contact Unsplash.
 
@@ -42,3 +42,5 @@ JPEG, PNG and WebP; HEIC only where the browser's native image decoder supports 
 ## Third-party code
 
 `vendor/exifr-7.1.3.js` is the pinned unmodified exifr 7.1.3 UMD distribution, MIT licensed. License: `vendor/exifr-LICENSE.txt`. It is served locally; no runtime dependency fetch is required.
+
+`assets/brands/` contains the Apple, DJI and Fujifilm vector icons from Simple Icons 15.21.0, distributed under CC0; license in that directory. Brand marks identify the selected camera; FRAMELABS is independent of those manufacturers. Bundled vectors are trusted static assets; user logo imports accept only raster images.
