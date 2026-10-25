@@ -34,6 +34,15 @@ test('EXIF import formats actual values without inventing absent camera data',()
 test('hidden or empty rows do not reserve a metadata footer',()=>{
   const l=layoutFor(3000,2000,{...DEFAULTS,showExif:false,showBrand:false,caption:''},'white');assert.equal(l.footer,0);
 });
+test('camera names reserve a footer and all text rows fit beneath the photograph',()=>{
+  for(const key of ['white','soft','rounded']) {
+    const l=layoutFor(3000,2000,{...DEFAULTS,camera:'FUJIFILM'},key);
+    assert.equal(l.hasBrand,true);assert.ok(l.footer>=102);
+    const cy=l.pad+l.photoH+(l.footer+l.pad)/2;
+    assert.ok(cy-18.5-20>=l.pad+l.photoH);
+    assert.ok(cy+18.5+20<=l.height);
+  }
+});
 test('storage quota fallback keeps current settings and never throws when denied',()=>{
   let written;const project={version:1,template:'white',photo:'photo',camera:'mine'};
   const quota={setItem(key,value){if(JSON.parse(value).photo)throw new Error('quota');written=JSON.parse(value);}};

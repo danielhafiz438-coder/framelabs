@@ -62,7 +62,7 @@ export function layoutFor(imageWidth, imageHeight, settings, template) {
   const photoW = 1000, photoH = photoW / ratio;
   const pad = template === 'overlay' ? 0 : settings.padding * 10;
   const hasDetails = settings.showExif && [settings.focal,settings.aperture,settings.shutter,settings.iso].some(Boolean);
-  const hasBrand = settings.showBrand && (settings.camera || settings.brand !== 'CUSTOM' || settings.hasLogo);
+  const hasBrand = Boolean(settings.showBrand && (settings.camera || settings.brand !== 'CUSTOM' || settings.hasLogo));
   const lines = Number(hasDetails) + Number(hasBrand) + Number(Boolean(settings.caption));
   const footer = template === 'overlay' || !lines ? 0 : Math.max(72, lines * 37 * settings.textSize / 100 + 28);
   return { width: photoW + pad * 2, height: photoH + pad * 2 + footer, photoW, photoH, pad, footer, hasDetails, hasBrand };

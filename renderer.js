@@ -5,8 +5,13 @@ const tintCache = new WeakMap();
 function tintLogo(img,color) {
   if(!tintCache.has(img))tintCache.set(img,new Map());
   const cache=tintCache.get(img);if(cache.has(color))return cache.get(color);
-  const c=document.createElement('canvas');c.width=480;c.height=Math.max(1,Math.round(480*img.naturalHeight/img.naturalWidth));
-  const ctx=c.getContext('2d');ctx.drawImage(img,0,0,c.width,c.height);ctx.globalCompositeOperation='source-in';ctx.fillStyle=color;ctx.fillRect(0,0,c.width,c.height);
+  const raster=document.createElement('canvas');raster.width=480;raster.height=480;
+  const rasterCtx=raster.getContext('2d',{willReadFrequently:true});rasterCtx.drawImage(img,0,0,480,480);
+  const pixels=rasterCtx.getImageData(0,0,480,480).data;
+  let minX=480,minY=480,maxX=0,maxY=0;
+  for(let y=0;y<480;y++)for(let x=0;x<480;x++)if(pixels[(y*480+x)*4+3]){minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);}
+  const c=document.createElement('canvas');c.width=Math.max(1,maxX-minX+1);c.height=Math.max(1,maxY-minY+1);
+  const ctx=c.getContext('2d');ctx.drawImage(raster,minX,minY,c.width,c.height,0,0,c.width,c.height);ctx.globalCompositeOperation='source-in';ctx.fillStyle=color;ctx.fillRect(0,0,c.width,c.height);
   if(cache.size>=8)cache.clear();cache.set(color,c);return c;
 }
 function roundedPath(ctx,x,y,w,h,r,begin=true) {
