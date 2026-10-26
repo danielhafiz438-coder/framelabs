@@ -171,6 +171,8 @@ body.framelabs-v2{overflow:hidden}
 .framelabs-v2.sheet-open .preview-panel{padding-bottom:calc(var(--sheet-height) + 113px + env(safe-area-inset-bottom))}
 .framelabs-v2 .inspector input[type=text],.framelabs-v2 .inspector select{font-size:16px;border-color:#787881}
 .framelabs-v2 .inspector .primary,.framelabs-v2 .gallery-dock .dock-primary{background:#2164d4;border-color:#2164d4;color:white}
+.framelabs-v2 .gallery-filter.active{background:#2164d4;border-color:#8fbcff;color:white}
+.framelabs-v2.sheet-open[data-tool="batch"] #status{display:none}
 .framelabs-v2 .brand-tab,.framelabs-v2 .brand-advanced summary,.framelabs-v2 .batch-file-details summary{min-height:44px}
 .framelabs-v2 .batch-focus-bar button{min-width:44px;min-height:44px}
 .framelabs-v2 .gallery-dock svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -179,3 +181,9 @@ body.framelabs-v2{overflow:hidden}
 .framelabs-v2 .header-actions #download-top span{position:static!important;width:auto!important;height:auto!important;clip-path:none;overflow:visible!important}
 .framelabs-v2.sheet-open #status{bottom:calc(var(--sheet-height) + 104px + env(safe-area-inset-bottom))}
 @media(prefers-reduced-motion:reduce){.framelabs-v2 *{scroll-behavior:auto!important}}
+@media(orientation:landscape) and (max-height:540px){
+ .framelabs-v2 .inspector{left:auto;right:12px;width:48vw;max-height:calc(100dvh - 180px);transform:translateY(105%)}
+ .framelabs-v2.sheet-open .inspector{transform:translateY(0)}
+ .framelabs-v2 .inspector[data-tool="batch"]{max-height:calc(100dvh - 180px)}
+ .framelabs-v2.sheet-open .preview-panel{padding:96px calc(50vw + 12px) 100px 12px}
+}

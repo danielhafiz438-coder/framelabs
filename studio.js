@@ -79,6 +79,7 @@ function setFields(tool){
   }
  });
  inspector.dataset.tool=tool;
+ body.dataset.tool=tool;
  sheetTitle.textContent=sheetNames[tool]||'Sesuaikan';
  inspector.querySelector('#reset').hidden=tool==='batch'||tool==='brand'||tool==='params'||tool==='export';
 }
@@ -137,7 +138,7 @@ catalog.append(galleryNote);
 const dock=document.createElement('div');dock.className='gallery-dock';
 dock.innerHTML='<button type="button" data-action="home" aria-label="Galeri template">'+svg('frame')+'<span>Galeri</span></button><button type="button" class="dock-primary" data-action="camera">'+svg('upload')+'<span>Pilih foto</span></button><button type="button" data-action="editor">'+svg('params')+'<span>Editor</span></button>';
 catalog.append(dock);
-dock.querySelector('[data-action="home"]').addEventListener('click',()=>catalog.scrollTo({top:0,behavior:'smooth'}));
+dock.querySelector('[data-action="home"]').addEventListener('click',()=>catalog.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));
 dock.querySelector('[data-action="camera"]').addEventListener('click',()=>$('photo-input').click());
 dock.querySelector('[data-action="editor"]').addEventListener('click',closeGallery);
 

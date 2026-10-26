@@ -64,6 +64,7 @@ try{
   await page.screenshot({path:'artifacts/v2-batch-gallery.png',fullPage:true});
   await page.locator('.batch-preview-card').nth(1).click();
   await page.waitForFunction(()=>!document.body.classList.contains('sheet-open')&&!document.querySelector('#batch-focus-bar').hidden);
+  await page.waitForFunction(()=>document.querySelector('#photo-name').textContent.includes('shot-2.png'));
   assert.equal(await page.locator('#batch-focus-count').textContent(),'2 / 3');
   assert.match(await page.locator('#photo-name').textContent(),/shot-2.png/);
   await page.screenshot({path:'artifacts/v2-batch-focus.png',fullPage:true});
