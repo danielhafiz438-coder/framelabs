@@ -60,3 +60,7 @@ body.v3-picking{overflow:hidden}
 .framelabs-v2 .v3-manage{z-index:60;bottom:calc(165px + env(safe-area-inset-bottom))}
 .framelabs-v2.sheet-open .v3-manage,.framelabs-v2.gallery-open .v3-manage,.v3-picking .v3-manage{display:none!important}
 .framelabs-v2 .inspector{max-height:min(70dvh,650px)}
+
+.v3-picker-actions{display:flex;align-items:center;justify-content:space-between;padding:0 16px 11px;gap:12px}
+.v3-picker-actions button{min-height:42px;border:1px solid #555867;background:#282b34;color:#e9f1ff;border-radius:14px;padding:7px 14px;font-size:13px}
+.v3-picker-actions span{font-size:11px;color:#a9a9b0}
