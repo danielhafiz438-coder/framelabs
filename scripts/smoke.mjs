@@ -94,7 +94,7 @@ try{
   // Adding a new image is also staged until Finish, and Cancel discards it.
   await page.locator('#v3-manage').click();
   assert.equal(await page.locator('#v3-add-photos').isVisible(),true);
-  await page.locator('#photo-input').setInputFiles([{name:'new-photo.png',mimeType:'image/png',buffer}]);
+  await page.locator('#photo-input').setInputFiles([{name:'new-photo.png',mimeType:'image/png',buffer:files[0].buffer}]);
   await page.waitForFunction(()=>window.FrameLabsV3.items.length===8);
   await page.locator('#v3-cancel').click();
   assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name)),namesBefore);
