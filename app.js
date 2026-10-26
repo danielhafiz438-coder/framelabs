@@ -513,7 +513,7 @@ let dragDepth=0;
 document.addEventListener('dragenter',e=>{if(!e.dataTransfer?.types.includes('Files'))return;e.preventDefault();dragDepth++;$('drop-zone').classList.add('dragging');});
 document.addEventListener('dragover',e=>{if(e.dataTransfer?.types.includes('Files'))e.preventDefault();});
 document.addEventListener('dragleave',()=>{if(--dragDepth<=0){dragDepth=0;$('drop-zone').classList.remove('dragging');}});
-document.addEventListener('drop',e=>{e.preventDefault();dragDepth=0;$('drop-zone').classList.remove('dragging');const files=Array.from(e.dataTransfer?.files||[]);if(files.length>1)addBatchFiles(files);else if(files.length)importPhoto(files[0]);});
+document.addEventListener('drop',e=>{e.preventDefault();dragDepth=0;$('drop-zone').classList.remove('dragging');const files=Array.from(e.dataTransfer?.files||[]);if(files.length)addBatchFiles(files);});
 $('clear-storage').addEventListener('click',()=>$('clear-dialog').showModal());
 $('cancel-clear').addEventListener('click',()=>$('clear-dialog').close());
 $('confirm-clear').addEventListener('click',async()=>{
