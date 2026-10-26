@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
 const server=spawn(process.execPath,['scripts/serve.mjs','--dist'],{stdio:'ignore'});
@@ -20,12 +20,14 @@ try{
   assert.equal(await page.locator('.template').count(),4);
   await page.screenshot({path:'artifacts/v2-gallery.png',fullPage:true});
   await page.locator('[data-template="soft"]').click();
+  assert.equal(await page.locator('.studio-tool').count(),5,'one visible tool per task, without overlapping Height/Margin/Frame panels');
   await page.screenshot({path:'artifacts/v2-editor.png',fullPage:true});
   await page.locator('.studio-tool[data-tool="frame"]').click();
   await page.locator('.palette-choice.pastel').click();
   assert.equal(await page.locator('#frameVariant').inputValue(),'pastel');
   await page.screenshot({path:'artifacts/v2-frame-sheet.png',fullPage:true});
   await page.locator('.sheet-close').click();
+  assert.ok(await page.locator('.studio-tool[data-tool="frame"]').evaluate(el=>el===document.activeElement),'closing panel restores tool focus');
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),false);
   await page.locator('.studio-tool[data-tool="brand"]').click();
   assert.equal(await page.locator('.inspector').getAttribute('data-tool'),'brand');
@@ -37,7 +39,7 @@ try{
   await page.locator('.studio-tool[data-tool="crop"]').click();
   await page.locator('#ratio').selectOption('16:9');
   await page.locator('.sheet-close').click();
-  await page.locator('.studio-tool[data-tool="export"]').click();
+  await page.locator('#download-top').click();
   await page.locator('#format').selectOption('webp');
   await page.screenshot({path:'artifacts/v2-mobile.png',fullPage:true});
   const dl=page.waitForEvent('download',{timeout:20000});
@@ -47,8 +49,8 @@ try{
   await page.locator('.sheet-close').click();
   await page.locator('.studio-tool[data-tool="batch"]').click();
   const sample=await page.evaluate(()=>{
-    const c=document.createElement('canvas');c.width=96;c.height=64;
-    c.getContext('2d').fillStyle='#bb3566';c.getContext('2d').fillRect(0,0,96,64);
+    const c=document.createElement('canvas');c.width=1800;c.height=1200;
+    c.getContext('2d').fillStyle='#bb3566';c.getContext('2d').fillRect(0,0,1800,1200);
     return c.toDataURL('image/png').split(',')[1];
   });
   const buffer=Buffer.from(sample,'base64');
@@ -62,9 +64,21 @@ try{
   await page.screenshot({path:'artifacts/v2-batch-gallery.png',fullPage:true});
   await page.locator('.batch-preview-card').nth(1).click();
   await page.waitForFunction(()=>!document.body.classList.contains('sheet-open')&&!document.querySelector('#batch-focus-bar').hidden);
+  await page.waitForFunction(()=>document.querySelector('#photo-name').textContent.includes('shot-2.png'));
   assert.equal(await page.locator('#batch-focus-count').textContent(),'2 / 3');
   assert.match(await page.locator('#photo-name').textContent(),/shot-2.png/);
   await page.screenshot({path:'artifacts/v2-batch-focus.png',fullPage:true});
+  await page.locator('.studio-tool[data-tool="params"]').click();
+  assert.ok(await page.locator('#iso').evaluate(el=>el.readOnly),'auto EXIF is per focused photo, not editable stale editor metadata');
+  await page.locator('#download-top').click();
+  await page.locator('#format').selectOption('png');
+  await page.locator('#resolution').selectOption('original');
+  const focusedExport=page.waitForEvent('download');
+  await page.locator('#download').click();
+  const focusedDownload=await focusedExport;
+  const original=await readFile(await focusedDownload.path());
+  assert.ok(original.readUInt32BE(16)>1600,'focused export must reopen original, not export the 640px thumbnail');
+  await page.locator('.sheet-close').click();
   await page.locator('#batch-next').click();
   await page.waitForFunction(()=>document.querySelector('#batch-focus-count').textContent==='3 / 3');
   await page.locator('#batch-prev').click();

@@ -8,7 +8,7 @@
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check studio.js && node --check image-io.js && node --check app.js && node --check core.js && node --check renderer.js && node --check batch.js && node --test tests/*.test.mjs"
+    "check": "node --check studio.js && node --check image-io.js && node --check preview.js && node --check app.js && node --check core.js && node --check renderer.js && node --check batch.js && node --test tests/*.test.mjs"
   },
   "engines": {
     "node": ">=20"

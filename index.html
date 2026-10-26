@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#191a18">
   <meta name="description" content="Edit foto dan buat bingkai kamera pada peranti. Galeri gaya, EXIF, RAW preview, HEIF, batch processing dan export.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
@@ -44,7 +44,7 @@
       <div class="preview-caption"><span id="photo-name">Foto contoh · Sebastien Gabriel</span><span id="dimensions">Memuatkan…</span></div>
       <div class="photo-actions"><button id="upload-main" class="button secondary"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></svg>Ganti foto</button><button id="use-demo" class="text-button">Guna foto contoh</button><span id="save-state" class="save-state" role="status">Tetapan disimpan automatik</span></div>
       <button id="batch-open" class="text-button batch-entry">Banyak foto? Buka batch processing</button>
-      <p id="status" class="status" role="status" aria-live="polite">Pilih foto sendiri atau cuba editor dengan foto contoh.</p>
+      <p id="status" class="status" role="status" aria-live="polite" hidden>Pilih foto sendiri atau cuba editor dengan foto contoh.</p>
       <p id="error" class="error" role="alert" hidden></p>
     </section>
 

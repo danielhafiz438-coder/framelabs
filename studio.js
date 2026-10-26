@@ -9,13 +9,9 @@ const icons={
 back:'<path d="m15 18-6-6 6-6"/>',
 upload:'<rect x="4" y="4" width="15" height="15" rx="2"/><path d="M9 9h11v11H9"/>',
 brand:'<circle cx="12" cy="12" r="9"/><path d="M9 16V8h4a2 2 0 0 1 0 4H9m4 0 3 4"/>',
-theme:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15 15 3M5 21 21 5"/>',
 params:'<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="#161617"/><circle cx="15" cy="17" r="3" fill="#161617"/>',
-height:'<path d="M8 3v18M16 3v18m-11-4 7 4 7-4M5 7l7-4 7 4"/>',
-margin:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/>',
 frame:'<rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1"/>',
 crop:'<path d="M5 3v14a2 2 0 0 0 2 2h14M3 5h14a2 2 0 0 1 2 2v14"/>',
-export:'<path d="M12 3v14m-5-5 5 5 5-5M4 17v4h16v-4"/>',
 batch:'<rect x="3" y="3" width="11" height="11" rx="1"/><rect x="10" y="10" width="11" height="11" rx="1"/>'
 };
 const svg=(name)=>'<svg aria-hidden="true" viewBox="0 0 24 24">'+icons[name]+'</svg>';
@@ -29,8 +25,7 @@ back.addEventListener('click',()=>openGallery());
 const toolbar=document.createElement('nav');toolbar.className='studio-toolbar';
 toolbar.setAttribute('aria-label','Alat suntingan');
 const toolLabels=[
-['brand','Brand'],['theme','Theme'],['params','Params'],['height','Height'],
-['margin','Margin'],['frame','Frame'],['crop','Crop'],['export','Export'],['batch','Batch']
+['brand','Jenama'],['params','Teks & EXIF'],['frame','Bingkai'],['crop','Nisbah'],['batch','Batch']
 ];
 for(const [key,label] of toolLabels){
  const b=document.createElement('button');b.type='button';b.className='studio-tool';b.dataset.tool=key;
@@ -47,13 +42,22 @@ close.textContent='×';close.setAttribute('aria-label','Tutup tetapan');
 inspector.querySelector('.inspector-title').append(close);close.addEventListener('click',closeSheet);
 
 const fieldSets={
-theme:['blur','darkness','frameColor','textColor'],
-height:['padding','radius'],
-margin:['padding','radius','innerRadius'],
-frame:['radius','innerRadius','blur','darkness','frameColor','textColor'],
+frame:['padding','radius','innerRadius','blur','darkness','frameColor','textColor'],
 crop:['ratio']
 };
-const sheetNames={brand:'Pilih Brand',theme:'Tema & Warna',params:'Maklumat Kamera',height:'Ketinggian',margin:'Margin & Bucu',frame:'Bingkai',crop:'Crop & Nisbah',export:'Eksport Foto',batch:'Batch Processing'};
+const sheetNames={brand:'Jenama & Logo',params:'Teks & Maklumat Kamera',frame:'Bingkai',crop:'Crop & Nisbah',export:'Eksport Foto',batch:'Batch Processing'};
+let returnFocus=null;
+inspector.id='settings-sheet';inspector.setAttribute('role','region');inspector.setAttribute('aria-labelledby','sheet-title');
+sheetTitle.id='sheet-title';
+for(const button of toolbar.querySelectorAll('button'))button.setAttribute('aria-controls',inspector.id);
+function syncSurfaces(){
+ const galleryOpen=body.classList.contains('gallery-open'),sheetOpen=body.classList.contains('sheet-open');
+ catalog.inert=!galleryOpen;inspector.inert=!sheetOpen;
+ document.querySelector('.preview-panel').inert=galleryOpen;
+ document.querySelector('.topbar').inert=galleryOpen;
+ toolbar.inert=galleryOpen;
+ document.dispatchEvent(new Event('studio:view'));
+}
 function includesControl(node,id){
  return node.id===id || node.htmlFor===id || Boolean(node.querySelector?.('#'+id));
 }
@@ -71,25 +75,42 @@ function setFields(tool){
   }
  });
  inspector.dataset.tool=tool;
+ body.dataset.tool=tool;
  sheetTitle.textContent=sheetNames[tool]||'Sesuaikan';
  inspector.querySelector('#reset').hidden=tool==='batch'||tool==='brand'||tool==='params'||tool==='export';
 }
 function openTool(tool){
  if(body.classList.contains('gallery-open'))body.classList.remove('gallery-open');
  if(body.classList.contains('sheet-open')&&inspector.dataset.tool===tool){closeSheet();return;}
+ returnFocus=document.activeElement;
  setFields(tool);body.classList.add('sheet-open');
  toolbar.querySelectorAll('.studio-tool').forEach(b=>{
   const active=b.dataset.tool===tool;b.classList.toggle('active',active);b.setAttribute('aria-expanded',String(active));
  });
  inspector.scrollTop=0;
+ syncSurfaces();close.focus();refreshPalette();
 }
 function closeSheet(){
  body.classList.remove('sheet-open');
  toolbar.querySelectorAll('.studio-tool').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-expanded','false');});
+ syncSurfaces();
+ if(returnFocus?.isConnected&&!returnFocus.disabled)returnFocus.focus();
 }
-function openGallery(){closeSheet();body.classList.add('gallery-open');catalog.scrollTop=0;}
-function closeGallery(){body.classList.remove('gallery-open');}
+function openGallery(){closeSheet();body.classList.add('gallery-open');catalog.scrollTop=0;syncSurfaces();catalog.querySelector('.template.selected')?.focus();}
+function closeGallery(){body.classList.remove('gallery-open');syncSurfaces();back.focus();}
+new ResizeObserver(()=>{document.documentElement.style.setProperty('--sheet-height',`${inspector.offsetHeight}px`);}).observe(inspector);
+$('download-top').setAttribute('aria-label','Pilihan eksport');$('download-top').title='Eksport';
+$('download-top').querySelector('span').textContent='Eksport';
+$('download-top').addEventListener('click',event=>{event.stopImmediatePropagation();openTool('export');},{capture:true});
 document.addEventListener('keydown',e=>{
+ if(e.key==='Tab'){
+  const surface=body.classList.contains('gallery-open')?catalog:null;
+  if(surface){
+   const nodes=[...surface.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled):not([type=hidden]),select:not(:disabled),summary')].filter(el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden');
+   const first=nodes[0],last=nodes.at(-1);
+   if(first&&((e.shiftKey&&document.activeElement===first)||(!e.shiftKey&&document.activeElement===last)||!surface.contains(document.activeElement))){e.preventDefault();(e.shiftKey?last:first).focus();}
+  }
+ }
  if(e.key!=='Escape')return;
  if(body.classList.contains('sheet-open'))closeSheet();
  else if(body.classList.contains('gallery-open'))closeGallery();
@@ -98,27 +119,25 @@ $('photo-input').addEventListener('change',e=>{if(e.target.files?.length)closeGa
 catalog.querySelectorAll('[data-template]').forEach(button=>button.addEventListener('click',closeGallery));
 
 const gallery=document.createElement('div');gallery.className='gallery-heading';
-gallery.innerHTML='<div class="gallery-top"><div class="wordmark">FRAME<span class="wordmark-light">LABS</span></div><button type="button" class="gallery-start" id="gallery-open-photo">+ Pilih foto</button></div><p class="gallery-kicker">YOUR PHOTO. YOUR FRAME.</p><h2 class="gallery-title">Explore frames.</h2><p class="gallery-sub">Pilih gaya, laras setiap detail, dan simpan terus ke peranti.</p><div class="gallery-filters" aria-label="Kategori template"><button type="button" class="gallery-filter active" data-filter="all">Semua</button><button type="button" class="gallery-filter" data-filter="classic">Classic</button><button type="button" class="gallery-filter" data-filter="blur">Blur</button><button type="button" class="gallery-filter" data-filter="minimal">Minimal</button></div>';
+gallery.innerHTML='<div class="gallery-top"><div class="wordmark">FRAME<span class="wordmark-light">LABS</span></div></div><p class="gallery-kicker">Pilih bingkai untuk foto kau.</p><div class="gallery-filters" aria-label="Kategori template"><button type="button" class="gallery-filter active" data-filter="all" aria-pressed="true">Semua</button><button type="button" class="gallery-filter" data-filter="classic" aria-pressed="false">Classic</button><button type="button" class="gallery-filter" data-filter="blur" aria-pressed="false">Blur</button><button type="button" class="gallery-filter" data-filter="minimal" aria-pressed="false">Minimal</button></div>';
 catalog.prepend(gallery);
-$('gallery-open-photo').addEventListener('click',()=>$('photo-input').click());
 const categories={soft:['blur'],rounded:['blur'],overlay:['minimal'],white:['classic','minimal']};
 catalog.querySelectorAll('[data-template]').forEach(b=>{b.dataset.categories=(categories[b.dataset.template]||[]).join(' ');});
 gallery.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{
  const selected=b.dataset.filter;
- gallery.querySelectorAll('[data-filter]').forEach(btn=>btn.classList.toggle('active',btn===b));
+ gallery.querySelectorAll('[data-filter]').forEach(btn=>{btn.classList.toggle('active',btn===b);btn.setAttribute('aria-pressed',String(btn===b));});
  catalog.querySelectorAll('[data-template]').forEach(item=>item.hidden=selected!=='all'&&!item.dataset.categories.split(' ').includes(selected));
 }));
 const galleryNote=document.createElement('p');galleryNote.className='gallery-note';
 galleryNote.textContent='Foto diproses pada peranti. JPG, PNG, WebP, AVIF, HEIC/HEIF dan preview RAW kamera (jika tersedia). Tiada akaun atau upload foto.';
 catalog.append(galleryNote);
 const dock=document.createElement('div');dock.className='gallery-dock';
-dock.innerHTML='<button type="button" data-action="home">⌂ <span>Home</span></button><button type="button" class="dock-primary" data-action="camera">▣ <span>Foto</span></button><button type="button" data-action="editor">▢ <span>Editor</span></button>';
+dock.innerHTML='<button type="button" data-action="home" aria-label="Galeri template">'+svg('frame')+'<span>Galeri</span></button><button type="button" class="dock-primary" data-action="camera">'+svg('upload')+'<span>Pilih foto</span></button><button type="button" data-action="editor">'+svg('params')+'<span>Editor</span></button>';
 catalog.append(dock);
-dock.querySelector('[data-action="home"]').addEventListener('click',()=>catalog.scrollTo({top:0,behavior:'smooth'}));
+dock.querySelector('[data-action="home"]').addEventListener('click',()=>catalog.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));
 dock.querySelector('[data-action="camera"]').addEventListener('click',()=>$('photo-input').click());
 dock.querySelector('[data-action="editor"]').addEventListener('click',closeGallery);
 
-// Brand picker: text treatments deliberately avoid copying proprietary app logos.
 const frameSection=sections[0];
 const framePalette=document.createElement('div');framePalette.id='frame-palette';framePalette.className='frame-palette';
 framePalette.innerHTML='<p class="palette-label">Select Frame</p><div class="palette-list" role="group" aria-label="Gaya warna bingkai"></div>';
@@ -146,7 +165,8 @@ for(const [value,label] of [['original','Auto'],['white','White'],['black','Blac
 }
 function refreshPalette(){
  const savedValue=form.elements.frameVariant.value||'original';
- paletteList.querySelectorAll('.palette-choice').forEach(btn=>btn.classList.toggle('selected',btn.dataset.palette===savedValue));
+ framePalette.hidden=document.querySelector('.template.selected')?.dataset.template==='overlay';
+ paletteList.querySelectorAll('.palette-choice').forEach(btn=>{btn.classList.toggle('selected',btn.dataset.palette===savedValue);btn.setAttribute('aria-pressed',String(btn.dataset.palette===savedValue));});
 }
 document.querySelectorAll('[data-template]').forEach(b=>b.addEventListener('click',refreshPalette));
 refreshPalette();
@@ -171,11 +191,11 @@ function renderBrandGroup(group){
   else {b.textContent=code==='IPHONE'?'Apple':code==='FUJIFILM'?'FUJIFILM':code;b.setAttribute('aria-label','Pilih '+code);}
   const chosen=code==='HIDE'?!$('showBrand').checked:brandSelect.value===code&&$('showBrand').checked;
   b.classList.toggle('selected',chosen);
+  b.setAttribute('aria-pressed',String(chosen));b.disabled=brandField.disabled||(code!=='HIDE'&&brandSelect.disabled);
   b.addEventListener('click',()=>{
    if(code!=='HIDE'){brandSelect.value=code;brandSelect.dispatchEvent(new Event('input',{bubbles:true}));}
    $('showBrand').checked=code!=='HIDE';
    $('showBrand').dispatchEvent(new Event('input',{bubbles:true}));
-   renderBrandGroup(group);
   });
   brandGrid.append(b);
  }
@@ -189,15 +209,20 @@ const brandAdvanced=document.createElement('details');brandAdvanced.className='b
 const brandSummary=document.createElement('summary');brandSummary.textContent='Custom brand & logo';brandAdvanced.append(brandSummary);
 [...brandField.children].filter(child=>!['LEGEND'].includes(child.tagName)&&child!==brandTabs&&child!==brandGrid).forEach(child=>brandAdvanced.append(child));
 brandField.append(brandAdvanced);
-brandSelect.addEventListener('input',()=>{
- const active=brandTabs.querySelector('.brand-tab.active')?.dataset.group||'Phone';
+function refreshBrand(){
+ let active=brandTabs.querySelector('.brand-tab.active')?.dataset.group||'Phone';
+ if(!brandGroups.find(([group])=>group===active)?.[1].includes(brandSelect.value))active=brandGroups.find(([,brands])=>brands.includes(brandSelect.value))?.[0]||active;
  renderBrandGroup(active);
-});
-$('showBrand').addEventListener('input',()=>{
- const active=brandTabs.querySelector('.brand-tab.active')?.dataset.group||'Phone';
- renderBrandGroup(active);
-});
+}
+let brandRefreshPending=false;
+form.addEventListener('input',event=>{if(['brand','showBrand'].includes(event.target.id)&&!brandRefreshPending){brandRefreshPending=true;queueMicrotask(()=>{brandRefreshPending=false;refreshBrand();});}});
+document.addEventListener('editor:settings',()=>{refreshPalette();refreshBrand();});
+document.addEventListener('editor:busy',event=>{for(const button of inspector.querySelectorAll('.brand-choice,.brand-tab,.palette-choice'))button.disabled=event.detail||(button.classList.contains('brand-choice')&&!button.classList.contains('hide-logo')&&brandSelect.disabled);});
+for(const node of [$('textSize').closest('.range-field'),document.querySelector('label[for=caption]'),$('caption')])sections[2].append(node);
+const demo=$('use-demo');document.querySelector('.storage-details').append(demo);
+document.body.append($('status'),$('error'));
 const exportHelper=document.createElement('p');exportHelper.className='helper';
 exportHelper.textContent='Input RAW menggunakan preview JPEG yang tertanam (bukan sensor RAW penuh). HEIC/HEIF ditukar secara lokal apabila browser tidak dapat buka terus. Fail asal tidak diubah.';
 sections[3].append(exportHelper);
 setFields('brand');
+syncSurfaces();

@@ -1,6 +1,7 @@
 import { STORAGE_KEY, TEMPLATE_NAMES, DEFAULTS, STYLE_DEFAULTS, freshStyles, sanitizeSettings, parseProject, saveProject, layoutFor, exportSize, metadataSettings } from './core.js';
 import { render } from './renderer.js';
 import { openPhoto } from './image-io.js';
+import { previewSize, idleTurn, createIdlePainter } from './preview.js';
 import { BATCH_LIMIT, BATCH_INPUT_LIMIT, BATCH_OUTPUT_LIMIT, validatePhotoFile, batchSettings, outputName, createZip } from './batch.js';
 
 const $ = id => document.getElementById(id);
@@ -11,16 +12,22 @@ let template=saved?.template||'soft', styles=saved?.styles||freshStyles();
 let photo=null, logo=null, photoData=saved?.photo||null, logoData=saved?.logo||null;
 let photoName=saved?.photoName||'Foto contoh · Sebastien Gabriel', isDemo=!photoData, exifFound=saved?.exifFound||false;
 let comparing=false, busy=false, importing=false, saveTimer, frame=0, exportURL=null, restored=Boolean(photoData);
+let noticeTimer;
 const brandLogos={};
 let batchQueue=[], batchURL=null, batchCancelled=false;
 let batchFocus=null, batchFocusRequest=0, thumbWorker=null, thumbPaintTimer=0;
+const previewCache=new WeakMap();
+let galleryDirty=true, galleryScheduled=false;
+let previewDecode=Promise.resolve();
+const batchPainter=createIdlePainter(item=>{if(!busy&&batchQueue.includes(item))paintBatchThumbnail(item);});
 $('batch-metadata').value=saved?.batchMode||'auto';
 const sharedKeys=new Set(['brand','camera','caption','focal','aperture','shutter','iso','showExif','showBrand']);
 const style=()=>styles[template];
-function message(text) {$('status').textContent=text;}
+function message(text) {$('status').textContent=text;$('status').hidden=false;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>{$('status').hidden=true;},8000);}
 function error(text) {$('error').textContent=text;$('error').hidden=!text;}
 function setBusy(value) {
   busy=value;
+  if(value)batchFocusRequest++;
   for(const id of ['download','download-top','upload-top','upload-main','upload-logo','use-demo','clear-storage','reset','compare','remove-logo','batch-select','batch-open']) $(id).disabled=value;
   for(const fieldset of form.querySelectorAll('fieldset'))fieldset.disabled=value;
   for(const button of document.querySelectorAll('[data-template]'))button.disabled=value;
@@ -32,6 +39,8 @@ function setBusy(value) {
   for(const id of ['batch-prev','batch-next','batch-exit']) $(id).disabled=value;
   if(batchFocus)updateBatchFocusBar();
   $('preview').setAttribute('aria-busy',String(value));
+  document.dispatchEvent(new CustomEvent('editor:busy',{detail:value}));
+  if(!value)ensureBatchThumbnails();
 }
 function loadImage(src) {
   return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('Foto tidak dapat dibuka. Untuk HEIC, cuba Safari terkini atau tukarkan kepada JPG dahulu.'));img.src=src;});
@@ -61,12 +70,15 @@ function persist() {
 }
 function queueSave() {$('save-state').textContent='Menyimpan…';clearTimeout(saveTimer);saveTimer=setTimeout(persist,400);}
 function syncForm() {
-  const s=style();
+  const s=batchFocus?effectiveBatchSettings(batchFocus.item):style();
+  const automatic=Boolean(batchFocus&&$('batch-metadata').value==='auto');
   for(const key of Object.keys(DEFAULTS)) {
     const input=form.elements.namedItem(key);if(!input)continue;
     if(input.type==='checkbox')input.checked=s[key];else input.value=s[key];
     const out=$(`${key}-value`);if(out)out.value=key==='textSize'||key==='darkness'?`${s[key]}%`:key==='blur'?`${s[key]}`:`${s[key]}%`;
   }
+  for(const key of ['camera','focal','aperture','shutter','iso'])$(key).readOnly=automatic;
+  $('brand').disabled=automatic;
   const overlay=template==='overlay',white=template==='white';
   for(const el of document.querySelectorAll('[data-control]')) {
     const key=el.dataset.control;
@@ -78,7 +90,8 @@ function syncForm() {
     const selected=button.dataset.template===template;button.classList.toggle('selected',selected);button.setAttribute('aria-pressed',String(selected));
   }
   $('current-template').textContent=TEMPLATE_NAMES[template];
-  $('exif-status').textContent=isDemo?'Foto contoh menggunakan maklumat ilustrasi. Semua boleh diedit.':exifFound?'Maklumat EXIF dibaca daripada foto. Semak atau ubah sebelum eksport.':'EXIF tiada / tidak dapat dibaca. Isi maklumat sendiri atau sembunyikannya.';
+  $('exif-status').textContent=automatic?'EXIF foto batch semasa. Pilih “Guna maklumat editor untuk semua” dalam Batch untuk sunting secara manual.':isDemo?'Foto contoh menggunakan maklumat ilustrasi. Semua boleh diedit.':exifFound?'Maklumat EXIF dibaca daripada foto. Semak atau ubah sebelum eksport.':'EXIF tiada / tidak dapat dibaca. Isi maklumat sendiri atau sembunyikannya.';
+  document.dispatchEvent(new Event('editor:settings'));
 }
 function effectiveBatchSettings(item) {
   return sanitizeSettings(batchSettings({...style()},item.metadata?.metadata,$('batch-metadata').value));
@@ -95,24 +108,36 @@ function renderPreview() {
   if(comparing) {
     const k=Math.min(1,1400/Math.max(w,h));preview.width=Math.max(1,Math.round(w*k));preview.height=Math.max(1,Math.round(h*k));
     preview.getContext('2d').drawImage(img,0,0,preview.width,preview.height);
-  } else render(preview,img,settings,template,{logo,brandLogo:brandLogos[settings.brand]});
+  } else {
+    if(!(img instanceof HTMLCanvasElement)&&!previewCache.has(img))previewCache.set(img,smallCanvas(img,1600));
+    render(preview,img instanceof HTMLCanvasElement?img:previewCache.get(img),settings,template,{logo,brandLogo:brandLogos[settings.brand]});
+  }
   const label=batchFocus?`Pratonton batch ${batchFocus.index+1} daripada ${batchQueue.length}`:`Pratonton foto dengan bingkai ${TEMPLATE_NAMES[template]}`;
   preview.setAttribute('aria-label',comparing?'Foto asal tanpa bingkai':label);
-  const size=dimensions(img,settings);$('dimensions').textContent=`${size.width} × ${size.height} px`;
+  const source=batchFocus?{width:batchFocus.item.sourceWidth,height:batchFocus.item.sourceHeight}:img;
+  const size=dimensions(source,settings);$('dimensions').textContent=`${size.width} × ${size.height} px`;
   $('photo-name').textContent=batchFocus?`Batch ${batchFocus.index+1}/${batchQueue.length} · ${batchFocus.item.file.name}`:restored?`${photoName} · salinan tersimpan`:photoName;
 }
 function renderThumbnails() {
-  if(!photo)return;
+  if(!photo||!document.body.classList.contains('gallery-open')){galleryDirty=true;return;}
+  galleryDirty=false;
+  if(!previewCache.has(photo))previewCache.set(photo,smallCanvas(photo,1600));
   for(const button of document.querySelectorAll('[data-template]')) {
     const target=button.querySelector('canvas'),tmp=document.createElement('canvas'),key=button.dataset.template;
-    render(tmp,photo,styles[key],key,{maxSide:420,logo,brandLogo:brandLogos[styles[key].brand]});
+    render(tmp,previewCache.get(photo),styles[key],key,{maxSide:420,logo,brandLogo:brandLogos[styles[key].brand]});
     target.width=280;target.height=170;const ctx=target.getContext('2d');ctx.fillStyle='#151614';ctx.fillRect(0,0,280,170);
     const scale=Math.min(256/tmp.width,146/tmp.height);ctx.drawImage(tmp,(280-tmp.width*scale)/2,(170-tmp.height*scale)/2,tmp.width*scale,tmp.height*scale);
   }
 }
 function update(thumbnails=false) {
-  cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{renderPreview();if(thumbnails)renderThumbnails();});
+  if(thumbnails)galleryDirty=true;
+  cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{renderPreview();scheduleGalleryPaint();});
 }
+function scheduleGalleryPaint(){
+  if(galleryScheduled||!galleryDirty||!document.body.classList.contains('gallery-open'))return;
+  galleryScheduled=true;idleTurn(()=>{galleryScheduled=false;if(galleryDirty)renderThumbnails();});
+}
+document.addEventListener('studio:view',()=>{scheduleGalleryPaint();if(document.body.classList.contains('sheet-open')&&document.querySelector('.inspector').dataset.tool==='batch'){ensureBatchThumbnails();paintBatchThumbnails();}});
 function discardExport() {if(exportURL)URL.revokeObjectURL(exportURL);exportURL=null;$('export-link').hidden=true;}
 function selectTemplate(key) {
   if(!Object.hasOwn(TEMPLATE_NAMES,key))return;
@@ -129,6 +154,10 @@ form.addEventListener('input',e=>{
     form.elements.camera.value=camera;
   }else if(sharedKeys.has(key))for(const entry of Object.values(styles))entry[key]=value;
   else styles[template][key]=value;
+  if(key==='frameVariant'){
+    styles[template].textColor=['white','pastel','vibrant'].includes(value)?'#202020':value==='black'?'#ffffff':STYLE_DEFAULTS[template].textColor;
+    form.elements.textColor.value=styles[template].textColor;
+  }
   styles[template]=sanitizeSettings(styles[template]);
   const out=$(`${key}-value`);if(out)out.value=key==='textSize'||key==='darkness'?`${value}%`:key==='blur'?String(value):`${value}%`;
   comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';
@@ -173,6 +202,7 @@ $('remove-logo').addEventListener('click',()=>{logo=null;logoData=null;syncForm(
 $('compare').addEventListener('click',()=>{comparing=!comparing;$('compare').setAttribute('aria-pressed',String(comparing));$('compare').textContent=comparing?'Kembali ke bingkai':'Lihat asal';update();});
 $('reset').addEventListener('click',()=>{styles[template]={...style(),...STYLE_DEFAULTS[template],textSize:100,ratio:'original'};syncForm();update(true);queueSave();discardExport();scheduleBatchThumbPaint();message('Tetapan bingkai direset. Foto dan tulisan dikekalkan.');});
 async function useDemo(save=true,preserveMetadata=false) {
+  if(batchFocus)closeBatchFocus();
   const next=await loadImage('./assets/demo-coast.jpg');photo=next;photoData=null;photoName='Foto contoh · Sebastien Gabriel';isDemo=true;restored=false;exifFound=false;
   if(!preserveMetadata)for(const key of Object.keys(styles))for(const field of ['brand','camera','focal','aperture','shutter','iso'])styles[key][field]=DEFAULTS[field];
   comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';
@@ -185,7 +215,12 @@ async function download() {
   try {
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     const s=batchFocus?effectiveBatchSettings(batchFocus.item):{...style()}, chosen=template;
-    const {blob,size}=await encodePhoto(batchFocus?.img||photo,s,chosen,logo);
+    let loaded,result;
+    try{
+      if(batchFocus)loaded=await openPhoto(batchFocus.item.file);
+      result=await encodePhoto(loaded?.img||photo,s,chosen,logo);
+    }finally{if(loaded){URL.revokeObjectURL(loaded.url);loaded.img.removeAttribute('src');}}
+    const {blob,size}=result;
     discardExport();exportURL=URL.createObjectURL(blob);
     const a=$('export-link');a.href=exportURL;a.download=`framelabs-${chosen}-${batchFocus?'batch-'+(batchFocus.index+1)+'-':''}${Date.now()}.${s.format==='jpeg'?'jpg':s.format==='webp'?'webp':'png'}`;a.hidden=false;a.click();
     message(`Gambar ${s.format.toUpperCase()} sedia (${size.width} × ${size.height} px). Jika download tidak bermula, tekan pautan di bawah butang Download.`);
@@ -226,26 +261,23 @@ function updateBatchFocusBar(){
 }
 function closeBatchFocus(){
   batchFocusRequest++;
-  if(batchFocus?.url)URL.revokeObjectURL(batchFocus.url);
-  if(batchFocus?.img)batchFocus.img.removeAttribute('src');
   batchFocus=null;
+  syncForm();
   const topCount=document.querySelector('.studio-counter');if(topCount)topCount.textContent='1/1';
   $('batch-focus-bar').hidden=true;
   update();discardExport();
   for(const item of batchQueue)item.card?.classList.remove('selected');
 }
 async function getBatchMetadata(item){
-  if(!item.metadata)item.metadata=await readMetadata(item.file);
-  return item.metadata;
+  if(!item.metadataTask)item.metadataTask=readMetadata(item.file).then(data=>{item.metadata=data;return data;});
+  return item.metadataTask;
 }
 function smallCanvas(img,maxSide=560){
   const w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
   if(w*h>96000000)throw new Error('Foto melebihi 96 megapiksel.');
-  const scale=Math.min(1,maxSide/Math.max(w,h));
   const canvas=document.createElement('canvas');
-  canvas.width=Math.max(1,Math.round(w*scale));
-  canvas.height=Math.max(1,Math.round(h*scale));
-  canvas.getContext('2d',{alpha:false}).drawImage(img,0,0,canvas.width,canvas.height);
+  const size=previewSize(w,h,maxSide);canvas.width=size.width;canvas.height=size.height;
+  canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
   return canvas;
 }
 function updateBatchThumbStatus(){
@@ -277,14 +309,13 @@ function paintBatchThumbnail(item){
   }
 }
 function paintBatchThumbnails(){
-  for(const item of batchQueue)paintBatchThumbnail(item);
+  batchPainter.enqueue(batchQueue);
   updateBatchThumbStatus();
 }
 function scheduleBatchThumbPaint(){
   clearTimeout(thumbPaintTimer);
   thumbPaintTimer=setTimeout(()=>{
     paintBatchThumbnails();
-    if(batchFocus)renderPreview();
   },180);
 }
 function drawBatchGallery(){
@@ -307,19 +338,17 @@ function drawBatchGallery(){
   updateBatchThumbStatus();
 }
 function ensureBatchThumbnails(){
-  if(thumbWorker)return;
+  if(thumbWorker||busy)return;
   thumbWorker=(async()=>{
     while(true){
+      if(busy)break;
       const item=batchQueue.find(i=>!i.previewImage&&!i.previewError&&!i.previewLoading);
       if(!item)break;
       item.previewLoading=true;
-      let loaded;
       try{
-        loaded=await openPhoto(item.file);
-        const small=smallCanvas(loaded.img);
-        await getBatchMetadata(item);
+        await getBatchPreview(item);
         if(batchQueue.includes(item)){
-          item.previewImage=small;paintBatchThumbnail(item);updateBatchThumbStatus();
+          paintBatchThumbnail(item);updateBatchThumbStatus();
         }
       }catch(err){
         if(batchQueue.includes(item)){
@@ -327,29 +356,38 @@ function ensureBatchThumbnails(){
           paintBatchThumbnail(item);updateBatchThumbStatus();
         }
       }finally{
-        if(loaded){URL.revokeObjectURL(loaded.url);loaded.img.removeAttribute('src');}
         item.previewLoading=false;
       }
-      await new Promise(resolve=>setTimeout(resolve,0));
+      await new Promise(resolve=>idleTurn(resolve));
     }
   })().finally(()=>{
     thumbWorker=null;
-    if(batchQueue.some(i=>!i.previewImage&&!i.previewError&&!i.previewLoading))ensureBatchThumbnails();
+    if(!busy&&batchQueue.some(i=>!i.previewImage&&!i.previewError&&!i.previewLoading))ensureBatchThumbnails();
   });
+}
+async function getBatchPreview(item){
+  if(!item.previewTask){item.previewTask=previewDecode.then(async()=>{
+    if(!batchQueue.includes(item))throw new Error('Foto telah dikeluarkan daripada batch.');
+    const loaded=await openPhoto(item.file);
+    try{
+      const small=smallCanvas(loaded.img,640);
+      await getBatchMetadata(item);
+      item.sourceWidth=loaded.img.naturalWidth;item.sourceHeight=loaded.img.naturalHeight;
+      item.previewImage=small;
+      return small;
+    }finally{URL.revokeObjectURL(loaded.url);loaded.img.removeAttribute('src');}
+  });previewDecode=item.previewTask.catch(()=>{});}
+  return item.previewTask;
 }
 async function focusBatchPhoto(item){
   if(busy||!batchQueue.includes(item))return;
   const request=++batchFocusRequest;
   $('batch-preview-status').textContent='Membuka preview besar…';
-  let loaded;
   try{
-    loaded=await openPhoto(item.file);
-    await getBatchMetadata(item);
+    const img=await getBatchPreview(item);
     if(request!==batchFocusRequest||!batchQueue.includes(item))return;
-    if(batchFocus?.url)URL.revokeObjectURL(batchFocus.url);
-    if(batchFocus?.img)batchFocus.img.removeAttribute('src');
-    batchFocus={item,img:loaded.img,url:loaded.url,index:batchQueue.indexOf(item)};
-    loaded=null;
+    batchFocus={item,img,index:batchQueue.indexOf(item)};
+    syncForm();
     comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';
     updateBatchFocusBar();update();discardExport();paintBatchThumbnails();
     if(document.body.classList.contains('sheet-open'))document.querySelector('.sheet-close')?.click();
@@ -357,7 +395,6 @@ async function focusBatchPhoto(item){
   }catch(e){
     $('batch-preview-status').textContent='Preview besar gagal: '+String(e.message||'Fail tidak disokong');
   }finally{
-    if(loaded){URL.revokeObjectURL(loaded.url);loaded.img.removeAttribute('src');}
     updateBatchThumbStatus();
   }
 }
@@ -403,7 +440,7 @@ $('batch-input').addEventListener('change',e=>{addBatchFiles(Array.from(e.target
 $('batch-clear').addEventListener('click',()=>{if(busy)return;closeBatchFocus();batchQueue=[];discardBatchResult();drawBatchQueue();$('batch-progress').hidden=true;$('batch-status').textContent='Senarai dikosongkan. Fail asal tidak terjejas.';});
 function syncBatchHelp(){ $('batch-mode-help').textContent=$('batch-metadata').value==='auto'?'Jika EXIF tiada, maklumat kamera dibiarkan kosong. Kapsyen dan logo sendiri ikut editor.':'Jenama, nama kamera dan tetapan kamera dalam editor digunakan untuk semua foto.'; }
 syncBatchHelp();
-$('batch-metadata').addEventListener('change',()=>{syncBatchHelp();queueSave();scheduleBatchThumbPaint();if(batchFocus)update();});
+$('batch-metadata').addEventListener('change',()=>{syncBatchHelp();queueSave();scheduleBatchThumbPaint();if(batchFocus){syncForm();update();}});
 $('batch-cancel').addEventListener('click',()=>{batchCancelled=true;$('batch-cancel').disabled=true;$('batch-status').textContent='Menghentikan selepas fail semasa…';});
 $('batch-run').addEventListener('click',async()=>{
   if(busy||!batchQueue.length)return;
@@ -414,6 +451,8 @@ $('batch-run').addEventListener('click',async()=>{
   $('batch-cancel').hidden=false;$('batch-cancel').disabled=false;
   for(const item of batchQueue){item.status='Menunggu';item.state.textContent=item.status;item.state.classList.remove('failed');}
   try{
+    if(thumbWorker)await thumbWorker;
+    await previewDecode;
     for(let index=0;index<batchQueue.length;index++){
       if(batchCancelled)break;
       const item=batchQueue[index];let url,img,decoded;
@@ -423,7 +462,7 @@ $('batch-run').addEventListener('click',async()=>{
         decoded=await openPhoto(item.file);url=decoded.url;img=decoded.img;
         if(img.naturalWidth*img.naturalHeight>96000000)throw new Error('Foto melebihi 96 megapiksel.');
         if(batchCancelled){item.status='Belum diproses';break;}
-        const data=mode==='auto'?await readMetadata(item.file):null;
+        const data=mode==='auto'?await getBatchMetadata(item):null;
         const s=sanitizeSettings(batchSettings(settings,data?.metadata,mode));
         const {blob,size}=await encodePhoto(img,s,chosen,mark);
         if(bytes+blob.size>BATCH_OUTPUT_LIMIT){limited=true;throw new Error('Had hasil 150 MB dicapai. Kurangkan batch atau resolusi.');}
