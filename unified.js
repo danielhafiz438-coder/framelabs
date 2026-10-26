@@ -3,7 +3,7 @@ import { selectionBytes } from './selection.js';
 
 const api=globalThis.FrameLabsV3, $=id=>document.getElementById(id);
 const root=document.createElement('section');
-root.id='v3-selection';root.className='v3-selection';root.hidden=true;
+root.id='v3-selection';root.className='v3-selection';root.hidden=true;root.tabIndex=-1;
 root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label','Semak pilihan foto');
 root.innerHTML=`
   <div class="v3-picker-top"><button type="button" id="v3-back" aria-label="Kembali">‹</button>
@@ -42,7 +42,7 @@ function show(){
  document.querySelector('.topbar').inert=true;
  document.querySelector('.preview-panel').inert=true;
  gallery.inert=true;document.querySelector('.inspector').inert=true;
- render();$('v3-heading').focus();
+ render();root.focus();
 }
 function hide(){
  open=false;peek=false;root.hidden=true;document.body.classList.remove('v3-picking');
@@ -122,8 +122,7 @@ async function finish(){
  if(api.activeId!==items[index].id){$('v3-finish').disabled=false;return;}
  lastCommitted=items.map(x=>x.id);
  hide();
- document.body.classList.remove('gallery-open');
- document.dispatchEvent(new Event('studio:view'));
+ if(document.body.classList.contains('gallery-open'))document.querySelector('[data-action=editor]')?.click();
  render();
 }
 function cancel(){
