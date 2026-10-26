@@ -64,3 +64,7 @@ body.v3-picking{overflow:hidden}
 .v3-picker-actions{display:flex;align-items:center;justify-content:space-between;padding:0 16px 11px;gap:12px}
 .v3-picker-actions button{min-height:42px;border:1px solid #555867;background:#282b34;color:#e9f1ff;border-radius:14px;padding:7px 14px;font-size:13px}
 .v3-picker-actions span{font-size:11px;color:#a9a9b0}
+
+.v3-add-row{display:flex;align-items:center;justify-content:space-between;padding:1px 16px 12px;gap:10px}
+.v3-add-row button{padding:9px 14px;color:#d9e8ff;background:#252e45;border:1px solid #456fb8;border-radius:12px;font-size:12px;min-height:43px}
+.v3-add-row span{font-size:11px;color:#a8a8af;text-align:right}
