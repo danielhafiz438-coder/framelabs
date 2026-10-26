@@ -113,3 +113,5 @@ body.framelabs-v2{overflow:hidden}
 .framelabs-v2 .template-panel .gallery-title,.framelabs-v2 .template-panel .gallery-sub{max-width:1050px;margin-left:auto;margin-right:auto}
 .framelabs-v2 .template-panel .gallery-note{max-width:1050px;margin-left:auto;margin-right:auto}
 .framelabs-v2 .sheet-close:focus-visible,.framelabs-v2 .studio-tool:focus-visible,.framelabs-v2 .brand-choice:focus-visible{outline:2px solid #86b3ff;outline-offset:3px}
+
+.framelabs-v2 .inspector[data-tool="export"] .storage-details{display:block}
