@@ -55,10 +55,23 @@ try{
   assert.equal(await page.evaluate(()=>window.FrameLabsV3.items[0].overrides.caption),undefined);
   await page.locator('#v3-global').click();
   await page.locator('.sheet-close').click();
+  const namesBefore=await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name));
   await page.locator('#v3-manage').click();
   assert.equal(await page.locator('.v3-selection-item').count(),7);
   await page.screenshot({path:'artifacts/v3-selection-return.png'});
+  // Removing and reordering in an unconfirmed review must be reversible.
+  await page.locator('.v3-selection-item').nth(0).locator('.v3-order-tools button').last().click();
+  await page.locator('.v3-selection-item').nth(1).locator('.v3-order-tools button').first().click();
+  assert.equal(await page.locator('.v3-selection-item').count(),6);
   await page.locator('#v3-cancel').click();
+  assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name)),namesBefore);
+  // Adding a new image is also staged until Finish, and Cancel discards it.
+  await page.locator('#v3-manage').click();
+  assert.equal(await page.locator('#v3-add-photos').isVisible(),true);
+  await page.locator('#photo-input').setInputFiles([{name:'new-photo.png',mimeType:'image/png',buffer}]);
+  await page.waitForFunction(()=>window.FrameLabsV3.items.length===8);
+  await page.locator('#v3-cancel').click();
+  assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name)),namesBefore);
   await page.locator('#download-top').click();
   await page.locator('#format').selectOption('png');
   const dl=page.waitForEvent('download',{timeout:30000});
