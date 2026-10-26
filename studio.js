@@ -65,8 +65,8 @@ function setFields(tool){
    const ids=fieldSets[tool]||[];
    for(const child of field.children){
     if(child.tagName==='LEGEND')continue;
-    child.hidden=!(tool==='frame'&&child.id==='frame-palette')&&!ids.some(id=>includesControl(child,id));
-    child.dataset.studioHidden=String(child.hidden);
+    // CSS hides unrelated tools; preserve the original renderer's template-specific hidden state.
+    child.dataset.studioHidden=String(!(tool==='frame'&&child.id==='frame-palette')&&!ids.some(id=>includesControl(child,id)));
    }
   }
  });
