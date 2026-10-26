@@ -15,7 +15,7 @@ let photoName=saved?.photoName||'Foto contoh · Sebastien Gabriel', isDemo=!phot
 let comparing=false, busy=false, importing=false, saveTimer, frame=0, exportURL=null, restored=Boolean(photoData);
 let noticeTimer;
 const brandLogos={};
-let batchQueue=[], batchURL=null, batchCancelled=false, nextSelectionId=1, editScope='global';
+let batchQueue=[], batchURL=null, batchCancelled=false, nextSelectionId=1, editScope='global', globalMetadataOverrides={};
 let batchFocus=null, batchFocusRequest=0, thumbWorker=null, thumbPaintTimer=0;
 const previewCache=new WeakMap();
 let galleryDirty=true, galleryScheduled=false;
@@ -73,7 +73,7 @@ function persist() {
 function queueSave() {$('save-state').textContent='Menyimpan…';clearTimeout(saveTimer);saveTimer=setTimeout(persist,400);}
 function syncForm() {
   const s=batchFocus?effectiveBatchSettings(batchFocus.item):style();
-  const automatic=Boolean(batchFocus&&$('batch-metadata').value==='auto'&&editScope==='global');
+  const automatic=false; // v3 explicit edits override per-file EXIF without disabling controls.
   for(const key of Object.keys(DEFAULTS)) {
     const input=form.elements.namedItem(key);if(!input)continue;
     if(input.type==='checkbox')input.checked=s[key];else input.value=s[key];
@@ -96,7 +96,7 @@ function syncForm() {
   document.dispatchEvent(new Event('editor:settings'));
 }
 function effectiveBatchSettings(item) {
-  return sanitizeSettings(settingsForPhoto({...style()},item.metadata?.metadata,$('batch-metadata').value,item.overrides||{}));
+  return sanitizeSettings(settingsForPhoto({...style()},item.metadata?.metadata,$('batch-metadata').value,{...globalMetadataOverrides,...(item.overrides||{})}));
 }
 function dimensions(img=photo, settings=style()) {
   const l=layoutFor(img.naturalWidth||img.width,img.naturalHeight||img.height,{...settings,hasLogo:Boolean(logo)},template);
@@ -171,6 +171,11 @@ form.addEventListener('input',e=>{
       form.elements.textColor.value=styles[template].textColor;
     }
     styles[template]=sanitizeSettings(styles[template]);
+    if(batchFocus){
+      const fields=['brand','camera','focal','aperture','shutter','iso','showBrand','showExif'];
+      if(fields.includes(key))globalMetadataOverrides[key]=value;
+      if(key==='brand')globalMetadataOverrides.camera=value==='CUSTOM'?'':value;
+    }
   }
   const out=$(`${key}-value`);if(out)out.value=key==='textSize'||key==='darkness'?`${value}%`:key==='blur'?String(value):`${value}%`;
   comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';
@@ -481,7 +486,7 @@ $('batch-run').addEventListener('click',async()=>{
         if(img.naturalWidth*img.naturalHeight>96000000)throw new Error('Foto melebihi 96 megapiksel.');
         if(batchCancelled){item.status='Belum diproses';break;}
         const data=mode==='auto'?await getBatchMetadata(item):null;
-        const s=sanitizeSettings(settingsForPhoto(settings,data?.metadata,mode,item.overrides||{}));
+        const s=sanitizeSettings(settingsForPhoto(settings,data?.metadata,mode,{...globalMetadataOverrides,...(item.overrides||{})}));
         const {blob,size}=await encodePhoto(img,s,chosen,mark);
         if(bytes+blob.size>BATCH_OUTPUT_LIMIT){limited=true;throw new Error('Had hasil 150 MB dicapai. Kurangkan batch atau resolusi.');}
         entries.push({name:outputName(item.file.name,index,chosen,s.format),blob});bytes+=blob.size;completed++;
