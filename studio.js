@@ -66,6 +66,7 @@ function setFields(tool){
    for(const child of field.children){
     if(child.tagName==='LEGEND')continue;
     child.hidden=!ids.some(id=>includesControl(child,id));
+    child.dataset.studioHidden=String(child.hidden);
    }
   }
  });
