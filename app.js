@@ -554,6 +554,12 @@ globalThis.FrameLabsV3={
     document.dispatchEvent(new Event('framelabs:selection'));
   },
   clear(){if(busy)return;closeBatchFocus();batchQueue=[];discardBatchResult();drawBatchQueue();document.dispatchEvent(new Event('framelabs:selection'));},
+  restore(items){
+    if(busy)return;
+    if(batchFocus&&!items.some(item=>item.id===batchFocus.item.id))closeBatchFocus();
+    batchQueue=[...items];discardBatchResult();drawBatchQueue();updateBatchFocusBar();
+    document.dispatchEvent(new Event('framelabs:selection'));
+  },
   add(files){addBatchFiles(files);},
   async ensure(id){const item=batchQueue.find(x=>x.id===id);if(item)await getBatchPreview(item);},
   exportAll(){if(batchQueue.length&&!busy)$('batch-run').click();},
