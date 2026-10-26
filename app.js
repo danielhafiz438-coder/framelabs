@@ -1,6 +1,7 @@
 import { STORAGE_KEY, TEMPLATE_NAMES, DEFAULTS, STYLE_DEFAULTS, freshStyles, sanitizeSettings, parseProject, saveProject, layoutFor, exportSize, metadataSettings } from './core.js';
 import { render } from './renderer.js';
 import { openPhoto } from './image-io.js';
+import { selectionEntry, moveEntry, settingsForPhoto } from './selection.js';
 import { previewSize, idleTurn, createIdlePainter } from './preview.js';
 import { BATCH_LIMIT, BATCH_INPUT_LIMIT, BATCH_OUTPUT_LIMIT, validatePhotoFile, batchSettings, outputName, createZip } from './batch.js';
 
@@ -14,7 +15,7 @@ let photoName=saved?.photoName||'Foto contoh · Sebastien Gabriel', isDemo=!phot
 let comparing=false, busy=false, importing=false, saveTimer, frame=0, exportURL=null, restored=Boolean(photoData);
 let noticeTimer;
 const brandLogos={};
-let batchQueue=[], batchURL=null, batchCancelled=false;
+let batchQueue=[], batchURL=null, batchCancelled=false, nextSelectionId=1, editScope='global';
 let batchFocus=null, batchFocusRequest=0, thumbWorker=null, thumbPaintTimer=0;
 const previewCache=new WeakMap();
 let galleryDirty=true, galleryScheduled=false;
@@ -36,6 +37,7 @@ function setBusy(value) {
   $('batch-run').disabled=value||!batchQueue.length;
   for(const button of $('batch-list').querySelectorAll('button'))button.disabled=value;
   for(const button of $('batch-preview-gallery').querySelectorAll('button'))button.disabled=value;
+  document.dispatchEvent(new CustomEvent('framelabs:busy',{detail:value}));
   for(const id of ['batch-prev','batch-next','batch-exit']) $(id).disabled=value;
   if(batchFocus)updateBatchFocusBar();
   $('preview').setAttribute('aria-busy',String(value));
@@ -71,7 +73,7 @@ function persist() {
 function queueSave() {$('save-state').textContent='Menyimpan…';clearTimeout(saveTimer);saveTimer=setTimeout(persist,400);}
 function syncForm() {
   const s=batchFocus?effectiveBatchSettings(batchFocus.item):style();
-  const automatic=Boolean(batchFocus&&$('batch-metadata').value==='auto');
+  const automatic=Boolean(batchFocus&&$('batch-metadata').value==='auto'&&editScope==='global');
   for(const key of Object.keys(DEFAULTS)) {
     const input=form.elements.namedItem(key);if(!input)continue;
     if(input.type==='checkbox')input.checked=s[key];else input.value=s[key];
@@ -94,7 +96,7 @@ function syncForm() {
   document.dispatchEvent(new Event('editor:settings'));
 }
 function effectiveBatchSettings(item) {
-  return sanitizeSettings(batchSettings({...style()},item.metadata?.metadata,$('batch-metadata').value));
+  return sanitizeSettings(settingsForPhoto({...style()},item.metadata?.metadata,$('batch-metadata').value,item.overrides||{}));
 }
 function dimensions(img=photo, settings=style()) {
   const l=layoutFor(img.naturalWidth||img.width,img.naturalHeight||img.height,{...settings,hasLogo:Boolean(logo)},template);
@@ -148,20 +150,32 @@ form.addEventListener('submit',e=>e.preventDefault());
 form.addEventListener('input',e=>{
   const input=e.target,key=input.name;if(!Object.hasOwn(DEFAULTS,key))return;
   let value=input.type==='checkbox'?input.checked:input.type==='range'?Number(input.value):input.value;
-  if(key==='brand') {
-    const camera= value==='CUSTOM'?'':value;
-    for(const entry of Object.values(styles)){entry.brand=value;entry.camera=camera;}
-    form.elements.camera.value=camera;
-  }else if(sharedKeys.has(key))for(const entry of Object.values(styles))entry[key]=value;
-  else styles[template][key]=value;
-  if(key==='frameVariant'){
-    styles[template].textColor=['white','pastel','vibrant'].includes(value)?'#202020':value==='black'?'#ffffff':STYLE_DEFAULTS[template].textColor;
-    form.elements.textColor.value=styles[template].textColor;
+  const individual=Boolean(batchFocus&&editScope==='individual');
+  if(individual){
+    const overrides=batchFocus.item.overrides||(batchFocus.item.overrides={});
+    overrides[key]=value;
+    if(key==='brand'){overrides.camera=value==='CUSTOM'?'':value;form.elements.camera.value=overrides.camera;}
+    if(key==='frameVariant'){
+      overrides.textColor=['white','pastel','vibrant'].includes(value)?'#202020':value==='black'?'#ffffff':STYLE_DEFAULTS[template].textColor;
+      form.elements.textColor.value=overrides.textColor;
+    }
+  }else{
+    if(key==='brand'){
+      const camera=value==='CUSTOM'?'':value;
+      for(const entry of Object.values(styles)){entry.brand=value;entry.camera=camera;}
+      form.elements.camera.value=camera;
+    }else if(sharedKeys.has(key))for(const entry of Object.values(styles))entry[key]=value;
+    else styles[template][key]=value;
+    if(key==='frameVariant'){
+      styles[template].textColor=['white','pastel','vibrant'].includes(value)?'#202020':value==='black'?'#ffffff':STYLE_DEFAULTS[template].textColor;
+      form.elements.textColor.value=styles[template].textColor;
+    }
+    styles[template]=sanitizeSettings(styles[template]);
   }
-  styles[template]=sanitizeSettings(styles[template]);
   const out=$(`${key}-value`);if(out)out.value=key==='textSize'||key==='darkness'?`${value}%`:key==='blur'?String(value):`${value}%`;
   comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';
   update(true);queueSave();discardExport();scheduleBatchThumbPaint();
+  document.dispatchEvent(new Event('framelabs:edited'));
 });
 for(const button of document.querySelectorAll('[data-template]'))button.addEventListener('click',()=>selectTemplate(button.dataset.template));
 for(const id of ['upload-top','upload-main'])$(id).addEventListener('click',()=>$('photo-input').click());
@@ -186,7 +200,7 @@ async function importPhoto(file) {
   }catch(e){error(e.message||'Foto tidak dapat dibuka. Cuba fail lain.');message('Foto sebelumnya dikekalkan.');}
   finally{if(url)URL.revokeObjectURL(url);setBusy(false);importing=false;$('photo-input').value='';}
 }
-$('photo-input').addEventListener('change',e=>importPhoto(e.target.files[0]));
+$('photo-input').addEventListener('change',e=>{if(e.target.files?.length)addBatchFiles(Array.from(e.target.files));e.target.value='';});
 $('logo-input').addEventListener('change',async e=>{
   const file=e.target.files[0];if(!file||busy)return;
   let url;error('');setBusy(true);
@@ -262,6 +276,7 @@ function updateBatchFocusBar(){
 function closeBatchFocus(){
   batchFocusRequest++;
   batchFocus=null;
+  document.dispatchEvent(new Event('framelabs:focus'));
   syncForm();
   const topCount=document.querySelector('.studio-counter');if(topCount)topCount.textContent='1/1';
   $('batch-focus-bar').hidden=true;
@@ -374,6 +389,7 @@ async function getBatchPreview(item){
       await getBatchMetadata(item);
       item.sourceWidth=loaded.img.naturalWidth;item.sourceHeight=loaded.img.naturalHeight;
       item.previewImage=small;
+      document.dispatchEvent(new CustomEvent('framelabs:preview-ready',{detail:{id:item.id}}));
       return small;
     }finally{URL.revokeObjectURL(loaded.url);loaded.img.removeAttribute('src');}
   });previewDecode=item.previewTask.catch(()=>{});}
@@ -387,6 +403,7 @@ async function focusBatchPhoto(item){
     const img=await getBatchPreview(item);
     if(request!==batchFocusRequest||!batchQueue.includes(item))return;
     batchFocus={item,img,index:batchQueue.indexOf(item)};
+    document.dispatchEvent(new CustomEvent('framelabs:focus',{detail:{id:item.id,index:batchFocus.index}}));
     syncForm();
     comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';
     updateBatchFocusBar();update();discardExport();paintBatchThumbnails();
@@ -425,10 +442,11 @@ function addBatchFiles(files) {
       validatePhotoFile(file);
       if(batchQueue.some(item=>item.file.name===file.name&&item.file.size===file.size&&item.file.lastModified===file.lastModified))continue;
       if(batchQueue.length>=BATCH_LIMIT||total+file.size>BATCH_INPUT_LIMIT)throw new Error('Had 30 foto / 300 MB dicapai.');
-      batchQueue.push({file,status:'Menunggu'});total+=file.size;
+      batchQueue.push(selectionEntry(file,'photo-'+(nextSelectionId++)));total+=file.size;
     }catch(e){rejected.push(`${file.name}: ${e.message}`);}
   }
   discardBatchResult();drawBatchQueue();$('batch-progress').hidden=true;
+  document.dispatchEvent(new CustomEvent('framelabs:selection',{detail:{rejected}}));
   $('batch-status').textContent=rejected.length?`${rejected.length} fail tidak ditambah. ${rejected.slice(0,2).join(' ')}`:'Foto dipilih. Laras gaya di editor, kemudian tekan Proses & download ZIP.';
 }
 function openBatch() {
@@ -463,7 +481,7 @@ $('batch-run').addEventListener('click',async()=>{
         if(img.naturalWidth*img.naturalHeight>96000000)throw new Error('Foto melebihi 96 megapiksel.');
         if(batchCancelled){item.status='Belum diproses';break;}
         const data=mode==='auto'?await getBatchMetadata(item):null;
-        const s=sanitizeSettings(batchSettings(settings,data?.metadata,mode));
+        const s=sanitizeSettings(settingsForPhoto(settings,data?.metadata,mode,item.overrides||{}));
         const {blob,size}=await encodePhoto(img,s,chosen,mark);
         if(bytes+blob.size>BATCH_OUTPUT_LIMIT){limited=true;throw new Error('Had hasil 150 MB dicapai. Kurangkan batch atau resolusi.');}
         entries.push({name:outputName(item.file.name,index,chosen,s.format),blob});bytes+=blob.size;completed++;
@@ -513,4 +531,35 @@ async function init() {
   }catch{error('Foto contoh gagal dimuatkan. Tekan Pilih foto untuk mula.');}
   finally{setBusy(false);document.documentElement.dataset.ready='true';}
 }
+globalThis.FrameLabsV3={
+  get items(){return [...batchQueue];},
+  get activeId(){return batchFocus?.item?.id||null;},
+  get activeIndex(){return batchFocus?.index??-1;},
+  get busy(){return busy;},
+  get scope(){return editScope;},
+  get template(){return template;},
+  setScope(value){editScope=value==='individual'?'individual':'global';syncForm();update();document.dispatchEvent(new Event('framelabs:scope'));},
+  async focus(id){const item=batchQueue.find(entry=>entry.id===id);if(item)await focusBatchPhoto(item);},
+  async step(dir){const next=(batchFocus?.index??0)+dir;if(next>=0&&next<batchQueue.length)await focusBatchPhoto(batchQueue[next]);},
+  reorder(id,dir){
+    const from=batchQueue.findIndex(x=>x.id===id),to=from+dir;
+    if(from<0||to<0||to>=batchQueue.length||busy)return;
+    batchQueue=moveEntry(batchQueue,from,to);
+    drawBatchQueue();updateBatchFocusBar();document.dispatchEvent(new Event('framelabs:selection'));
+  },
+  remove(id){
+    if(busy)return;const index=batchQueue.findIndex(x=>x.id===id);if(index<0)return;
+    if(batchFocus?.item.id===id)closeBatchFocus();
+    batchQueue.splice(index,1);discardBatchResult();drawBatchQueue();updateBatchFocusBar();
+    document.dispatchEvent(new Event('framelabs:selection'));
+  },
+  clear(){if(busy)return;closeBatchFocus();batchQueue=[];discardBatchResult();drawBatchQueue();document.dispatchEvent(new Event('framelabs:selection'));},
+  add(files){addBatchFiles(files);},
+  async ensure(id){const item=batchQueue.find(x=>x.id===id);if(item)await getBatchPreview(item);},
+  exportAll(){if(batchQueue.length&&!busy)$('batch-run').click();},
+  cancelExport(){if(busy)$('batch-cancel').click();},
+  resetCurrent(){if(!batchFocus||busy)return;batchFocus.item.overrides={};syncForm();update();scheduleBatchThumbPaint();document.dispatchEvent(new Event('framelabs:edited'));},
+  refresh(){syncForm();update();scheduleBatchThumbPaint();}
+};
+
 init();
