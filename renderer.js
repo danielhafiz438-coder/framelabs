@@ -82,8 +82,21 @@ export function render(canvas,img,settings,template,options={}) {
   if(options.jpeg) {ctx.fillStyle='#000000';ctx.fillRect(0,0,width,height);}
   ctx.save();ctx.scale(width/l.width,height/l.height);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   roundedPath(ctx,0,0,l.width,l.height,s.radius*10);ctx.clip();
-  if(template==='white') {ctx.fillStyle=s.frameColor;ctx.fillRect(0,0,l.width,l.height);}
-  else if(template!=='overlay') ctx.drawImage(blurred(img,l.width/l.height,s.blur),0,0,l.width,l.height);
+  if(template!=='overlay'){
+    if(s.frameVariant==='white'||s.frameVariant==='black'){
+      ctx.fillStyle=s.frameVariant==='white'?'#ffffff':'#000000';ctx.fillRect(0,0,l.width,l.height);
+    }else if(s.frameVariant==='pastel'||s.frameVariant==='vibrant'){
+      const gradient=ctx.createLinearGradient(0,0,l.width,l.height);
+      if(s.frameVariant==='pastel'){
+        gradient.addColorStop(0,'#f1a5bf');gradient.addColorStop(.48,'#ffe5a5');gradient.addColorStop(1,'#a6dff5');
+      }else{
+        gradient.addColorStop(0,'#ed2475');gradient.addColorStop(.5,'#ffa523');gradient.addColorStop(1,'#139be9');
+      }
+      ctx.fillStyle=gradient;ctx.fillRect(0,0,l.width,l.height);
+    }else if(template==='white'){
+      ctx.fillStyle=s.frameColor;ctx.fillRect(0,0,l.width,l.height);
+    }else ctx.drawImage(blurred(img,l.width/l.height,s.blur),0,0,l.width,l.height);
+  }
   ctx.save();roundedPath(ctx,l.pad,l.pad,l.photoW,l.photoH,s.innerRadius*10);ctx.clip();cover(ctx,img,l.pad,l.pad,l.photoW,l.photoH);ctx.restore();
   if(template!=='white') {
     const start=template==='overlay' ? l.height*.55 : l.pad+l.photoH*.65;
