@@ -65,7 +65,7 @@ function setFields(tool){
    const ids=fieldSets[tool]||[];
    for(const child of field.children){
     if(child.tagName==='LEGEND')continue;
-    child.hidden=!ids.some(id=>includesControl(child,id));
+    child.hidden=!(tool==='frame'&&child.id==='frame-palette')&&!ids.some(id=>includesControl(child,id));
     child.dataset.studioHidden=String(child.hidden);
    }
   }
@@ -119,6 +119,38 @@ dock.querySelector('[data-action="camera"]').addEventListener('click',()=>$('pho
 dock.querySelector('[data-action="editor"]').addEventListener('click',closeGallery);
 
 // Brand picker: text treatments deliberately avoid copying proprietary app logos.
+const frameSection=sections[0];
+const framePalette=document.createElement('div');framePalette.id='frame-palette';framePalette.className='frame-palette';
+framePalette.innerHTML='<p class="palette-label">Select Frame</p><div class="palette-list" role="group" aria-label="Gaya warna bingkai"></div>';
+frameSection.insertBefore(framePalette,frameSection.children[1]);
+const frameVariant=document.createElement('select');frameVariant.id='frameVariant';frameVariant.name='frameVariant';
+frameVariant.hidden=true;frameVariant.setAttribute('aria-label','Frame variation');
+for(const [value,label] of [['original','Original'],['white','White'],['black','Black'],['pastel','Pastel'],['vibrant','Vibrant']]){
+ const opt=document.createElement('option');opt.value=value;opt.textContent=label;frameVariant.append(opt);
+}
+frameSection.append(frameVariant);
+const paletteList=framePalette.querySelector('.palette-list');
+for(const [value,label] of [['original','Auto'],['white','White'],['black','Black'],['pastel','Pastel'],['vibrant','Vibrant']]){
+ const item=document.createElement('button');item.type='button';item.className='palette-choice '+value;
+ item.dataset.palette=value;item.setAttribute('aria-label',label+' frame');item.title=label;
+ item.addEventListener('click',()=>{
+  if(document.querySelector('.template.selected')?.dataset.template==='overlay'){
+    $('status').textContent='On Photo tidak mempunyai bingkai luar. Pilih Soft Frame atau Gallery White dahulu.';
+    return;
+  }
+  frameVariant.value=value;
+  frameVariant.dispatchEvent(new Event('input',{bubbles:true}));
+  refreshPalette();
+ });
+ paletteList.append(item);
+}
+function refreshPalette(){
+ const savedValue=form.elements.frameVariant.value||'original';
+ paletteList.querySelectorAll('.palette-choice').forEach(btn=>btn.classList.toggle('selected',btn.dataset.palette===savedValue));
+}
+document.querySelectorAll('[data-template]').forEach(b=>b.addEventListener('click',refreshPalette));
+refreshPalette();
+
 const brandField=sections[1],brandSelect=$('brand');
 const brandTabs=document.createElement('div');brandTabs.className='brand-tabs';
 const brandGrid=document.createElement('div');brandGrid.className='brand-grid';
@@ -153,6 +185,10 @@ for(const [group] of brandGroups){
  b.addEventListener('click',()=>renderBrandGroup(group));brandTabs.append(b);
 }
 renderBrandGroup('Phone');
+const brandAdvanced=document.createElement('details');brandAdvanced.className='brand-advanced';
+const brandSummary=document.createElement('summary');brandSummary.textContent='Custom brand & logo';brandAdvanced.append(brandSummary);
+[...brandField.children].filter(child=>!['LEGEND'].includes(child.tagName)&&child!==brandTabs&&child!==brandGrid).forEach(child=>brandAdvanced.append(child));
+brandField.append(brandAdvanced);
 brandSelect.addEventListener('input',()=>{
  const active=brandTabs.querySelector('.brand-tab.active')?.dataset.group||'Phone';
  renderBrandGroup(active);
