@@ -115,6 +115,7 @@ $('download-top').setAttribute('aria-label','Pilihan eksport');$('download-top')
 $('download-top').querySelector('span').textContent='Eksport';
 $('download-top').addEventListener('click',event=>{event.stopImmediatePropagation();openTool('export');},{capture:true});
 document.addEventListener('keydown',e=>{
+ if(body.classList.contains('v3-picking'))return;
  if(e.key==='Tab'){
   const surface=body.classList.contains('gallery-open')?catalog:null;
   if(surface){
