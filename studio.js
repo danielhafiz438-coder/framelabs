@@ -73,7 +73,7 @@ function setFields(tool){
    for(const child of field.children){
     if(child.tagName==='LEGEND')continue;
     // CSS hides unrelated tools; preserve the original renderer's template-specific hidden state.
-    child.dataset.studioHidden=String(!(tool==='frame'&&child.id==='frame-palette')&&!ids.some(id=>includesControl(child,id)));
+    child.dataset.studioHidden=String(!(tool==='frame'&&child.id==='frame-palette') && !(tool==='crop'&&child.id==='v3-crop-controls')&&!ids.some(id=>includesControl(child,id)));
    }
   }
  });
@@ -140,6 +140,21 @@ catalog.append(dock);
 dock.querySelector('[data-action="home"]').addEventListener('click',()=>catalog.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));
 dock.querySelector('[data-action="camera"]').addEventListener('click',()=>$('photo-input').click());
 dock.querySelector('[data-action="editor"]').addEventListener('click',closeGallery);
+
+const cropSection=sections[0], ratioControl=$('ratio');
+const cropPanel=document.createElement('div');cropPanel.id='v3-crop-controls';
+cropPanel.className='v3-crop-controls';
+for(const [key,label,min,max,val] of [
+ ['cropZoom','Zoom',100,300,100],['cropX','Horizontal',0,100,50],['cropY','Vertical',0,100,50]
+]){
+ const field=document.createElement('div');field.className='range-field';
+ const caption=document.createElement('label');caption.htmlFor=key;caption.textContent=label+' ';
+ const out=document.createElement('output');out.id=key+'-value';out.value=String(val)+'%';caption.append(out);
+ const input=document.createElement('input');input.id=key;input.name=key;input.type='range';
+ input.min=String(min);input.max=String(max);input.step='1';input.value=String(val);
+ field.append(caption,input);cropPanel.append(field);
+}
+cropSection.append(cropPanel);
 
 const frameSection=sections[0];
 const framePalette=document.createElement('div');framePalette.id='frame-palette';framePalette.className='frame-palette';
