@@ -12,6 +12,9 @@ brand:'<circle cx="12" cy="12" r="9"/><path d="M9 16V8h4a2 2 0 0 1 0 4H9m4 0 3 4
 params:'<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="#161617"/><circle cx="15" cy="17" r="3" fill="#161617"/>',
 frame:'<rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1"/>',
 crop:'<path d="M5 3v14a2 2 0 0 0 2 2h14M3 5h14a2 2 0 0 1 2 2v14"/>',
+theme:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15 15 3M5 21 21 5"/>',
+text:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M12 8v9"/>',
+margin:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8v8H8z"/>',
 batch:'<rect x="3" y="3" width="11" height="11" rx="1"/><rect x="10" y="10" width="11" height="11" rx="1"/>'
 };
 const svg=(name)=>'<svg aria-hidden="true" viewBox="0 0 24 24">'+icons[name]+'</svg>';
@@ -25,7 +28,7 @@ back.addEventListener('click',()=>openGallery());
 const toolbar=document.createElement('nav');toolbar.className='studio-toolbar';
 toolbar.setAttribute('aria-label','Alat suntingan');
 const toolLabels=[
-['brand','Jenama'],['params','Teks & EXIF'],['frame','Bingkai'],['crop','Nisbah'],['batch','Batch']
+['brand','Brand'],['theme','Theme'],['text','Text'],['params','Params'],['margin','Margin'],['frame','Frame'],['crop','Crop']
 ];
 for(const [key,label] of toolLabels){
  const b=document.createElement('button');b.type='button';b.className='studio-tool';b.dataset.tool=key;
@@ -45,7 +48,7 @@ const fieldSets={
 frame:['padding','radius','innerRadius','blur','darkness','frameColor','textColor'],
 crop:['ratio']
 };
-const sheetNames={brand:'Jenama & Logo',params:'Teks & Maklumat Kamera',frame:'Bingkai',crop:'Crop & Nisbah',export:'Eksport Foto',batch:'Batch Processing'};
+const sheetNames={brand:'Jenama & Logo',theme:'Theme',text:'Text & Caption',params:'Maklumat Kamera',margin:'Margin',frame:'Bingkai',crop:'Crop & Nisbah',export:'Eksport Foto',batch:'Batch Processing'};
 let returnFocus=null;
 inspector.id='settings-sheet';inspector.setAttribute('role','region');inspector.setAttribute('aria-labelledby','sheet-title');
 sheetTitle.id='sheet-title';
@@ -62,7 +65,7 @@ function includesControl(node,id){
  return node.id===id || node.htmlFor===id || Boolean(node.querySelector?.('#'+id));
 }
 function setFields(tool){
- const sectionIndex=tool==='brand'?1:tool==='params'?2:tool==='export'?3:tool==='batch'?-1:0;
+ const sectionIndex=tool==='brand'?1:tool==='params'||tool==='text'?2:tool==='export'?3:tool==='batch'?-1:0;
  sections.forEach((field,i)=>{
   field.hidden=i!==sectionIndex;
   if(i===0){
@@ -77,7 +80,7 @@ function setFields(tool){
  inspector.dataset.tool=tool;
  body.dataset.tool=tool;
  sheetTitle.textContent=sheetNames[tool]||'Sesuaikan';
- inspector.querySelector('#reset').hidden=tool==='batch'||tool==='brand'||tool==='params'||tool==='export';
+ inspector.querySelector('#reset').hidden=['batch','brand','params','text','export'].includes(tool);
 }
 function openTool(tool){
  if(body.classList.contains('gallery-open'))body.classList.remove('gallery-open');
@@ -116,7 +119,7 @@ document.addEventListener('keydown',e=>{
  else if(body.classList.contains('gallery-open'))closeGallery();
 });
 $('photo-input').addEventListener('change',e=>{if(e.target.files?.length)closeGallery();});
-catalog.querySelectorAll('[data-template]').forEach(button=>button.addEventListener('click',closeGallery));
+catalog.querySelectorAll('[data-template]').forEach(button=>button.addEventListener('click',()=>{if(globalThis.FrameLabsV3?.items.length)closeGallery();}));
 
 const gallery=document.createElement('div');gallery.className='gallery-heading';
 gallery.innerHTML='<div class="gallery-top"><div class="wordmark">FRAME<span class="wordmark-light">LABS</span></div></div><p class="gallery-kicker">Pilih bingkai untuk foto kau.</p><div class="gallery-filters" aria-label="Kategori template"><button type="button" class="gallery-filter active" data-filter="all" aria-pressed="true">Semua</button><button type="button" class="gallery-filter" data-filter="classic" aria-pressed="false">Classic</button><button type="button" class="gallery-filter" data-filter="blur" aria-pressed="false">Blur</button><button type="button" class="gallery-filter" data-filter="minimal" aria-pressed="false">Minimal</button></div>';
