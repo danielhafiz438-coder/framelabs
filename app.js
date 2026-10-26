@@ -1,5 +1,6 @@
 import { STORAGE_KEY, TEMPLATE_NAMES, DEFAULTS, STYLE_DEFAULTS, freshStyles, sanitizeSettings, parseProject, saveProject, layoutFor, exportSize, metadataSettings } from './core.js';
 import { render } from './renderer.js';
+import { openPhoto } from './image-io.js';
 import { BATCH_LIMIT, BATCH_INPUT_LIMIT, BATCH_OUTPUT_LIMIT, validatePhotoFile, batchSettings, outputName, createZip } from './batch.js';
 
 const $ = id => document.getElementById(id);
@@ -130,8 +131,8 @@ async function importPhoto(file) {
   let url;
   try {
     validatePhotoFile(file);
-    url=URL.createObjectURL(file);
-    const next=await loadImage(url);
+    const loaded=await openPhoto(file);url=loaded.url;
+    const next=loaded.img;
     if(next.naturalWidth*next.naturalHeight>96000000)throw new Error('Foto melebihi 96 megapiksel. Kecilkan foto dahulu.');
     const {metadata,found}=await readMetadata(file);
     let copy=null;try{copy=compactPhoto(next);}catch{message('Foto dibuka. Salinan tidak dapat disimpan; download sebelum menutup halaman.');}
@@ -139,7 +140,7 @@ async function importPhoto(file) {
     for(const key of Object.keys(styles))styles[key]=sanitizeSettings({...styles[key],...metadata});
     comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';discardExport();
     syncForm();renderPreview();renderThumbnails();persist();
-    message(copy?(found?'Foto sedia. Maklumat kamera dibaca secara automatik.':'Foto sedia. EXIF tiada; isi maklumat kamera sendiri jika perlu.'):'Foto sedia untuk eksport. Salinan foto tidak disimpan dalam browser.');
+    message(loaded.warning|| (copy?(found?'Foto sedia. Maklumat kamera dibaca secara automatik.':'Foto sedia. EXIF tiada; isi maklumat kamera sendiri jika perlu.'):'Foto sedia untuk eksport. Salinan foto tidak disimpan dalam browser.'));
   }catch(e){error(e.message||'Foto tidak dapat dibuka. Cuba fail lain.');message('Foto sebelumnya dikekalkan.');}
   finally{if(url)URL.revokeObjectURL(url);setBusy(false);importing=false;$('photo-input').value='';}
 }
@@ -173,7 +174,7 @@ async function download() {
     const s={...style()}, chosen=template;
     const {blob,size}=await encodePhoto(photo,s,chosen,logo);
     discardExport();exportURL=URL.createObjectURL(blob);
-    const a=$('export-link');a.href=exportURL;a.download=`framelabs-${chosen}-${Date.now()}.${s.format==='jpeg'?'jpg':'png'}`;a.hidden=false;a.click();
+    const a=$('export-link');a.href=exportURL;a.download=`framelabs-${chosen}-${Date.now()}.${s.format==='jpeg'?'jpg':s.format==='webp'?'webp':'png'}`;a.hidden=false;a.click();
     message(`Gambar ${s.format.toUpperCase()} sedia (${size.width} × ${size.height} px). Jika download tidak bermula, tekan pautan di bawah butang Download.`);
   }catch(e){error(e.message||'Eksport gagal. Cuba saiz 2048 px.');message('Eksport belum berjaya.');}finally{setBusy(false);}
 }
@@ -190,6 +191,7 @@ async function encodePhoto(img,s,key,mark) {
     render(canvas,img,s,key,{...size,logo:mark,brandLogo:brandLogos[s.brand],jpeg:s.format==='jpeg'});
     const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Eksport gagal. Cuba saiz 2048 px.')),`image/${s.format}`,.95));
     if(!blob.size)throw new Error('Hasil kosong. Cuba saiz 2048 px.');
+    if(s.format==='webp'&&blob.type!=='image/webp')throw new Error('Browser ini tidak menyokong eksport WebP. Pilih PNG atau JPEG.');
     return {blob,size};
   }finally{canvas.width=1;canvas.height=1;}
 }
@@ -246,11 +248,11 @@ $('batch-run').addEventListener('click',async()=>{
   try{
     for(let index=0;index<batchQueue.length;index++){
       if(batchCancelled)break;
-      const item=batchQueue[index];let url,img;
+      const item=batchQueue[index];let url,img,decoded;
       item.state.textContent='Memproses…';$('batch-status').textContent=`${index+1} / ${batchQueue.length}: ${item.file.name}`;
       await new Promise(resolve=>setTimeout(resolve,0));
       try{
-        url=URL.createObjectURL(item.file);img=await loadImage(url);
+        decoded=await openPhoto(item.file);url=decoded.url;img=decoded.img;
         if(img.naturalWidth*img.naturalHeight>96000000)throw new Error('Foto melebihi 96 megapiksel.');
         if(batchCancelled){item.status='Belum diproses';break;}
         const data=mode==='auto'?await readMetadata(item.file):null;
@@ -258,9 +260,9 @@ $('batch-run').addEventListener('click',async()=>{
         const {blob,size}=await encodePhoto(img,s,chosen,mark);
         if(bytes+blob.size>BATCH_OUTPUT_LIMIT){limited=true;throw new Error('Had hasil 150 MB dicapai. Kurangkan batch atau resolusi.');}
         entries.push({name:outputName(item.file.name,index,chosen,s.format),blob});bytes+=blob.size;completed++;
-        item.status=`Siap · ${size.width} × ${size.height}${mode==='auto'&&!data.found?' · tiada EXIF':''}`;
+        item.status=`Siap · ${size.width} × ${size.height}${decoded.source==='RAW preview'?' · RAW preview':''}${mode==='auto'&&!data.found?' · tiada EXIF':''}`;
       }catch(e){failed++;item.status=`Gagal: ${e.message}`;item.state.classList.add('failed');}
-      finally{if(url)URL.revokeObjectURL(url);if(img)img.src='';item.state.textContent=item.status;progress.value=index+1;}
+      finally{if(url)URL.revokeObjectURL(url);if(img)img.removeAttribute('src');item.state.textContent=item.status;progress.value=index+1;}
       if(limited)break;
     }
     $('batch-cancel').hidden=true;
