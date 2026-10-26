@@ -55,3 +55,8 @@ body.v3-picking{overflow:hidden}
 @media(min-width:700px){.v3-selection{max-width:670px;left:50%;right:auto;transform:translateX(-50%);box-shadow:0 0 0 100vw #000d}.v3-selection-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:380px){.v3-picker-footer #v3-size{font-size:10px}.v3-picker-footer button{padding:9px 12px}}
 @media(prefers-reduced-motion:reduce){.framelabs-v2 .canvas-wrap.v3-enter-forward,.framelabs-v2 .canvas-wrap.v3-enter-back{animation:none}}
+
+/* Keep batch management reachable when an editor notice is shown. */
+.framelabs-v2 .v3-manage{z-index:60;bottom:calc(165px + env(safe-area-inset-bottom))}
+.framelabs-v2.sheet-open .v3-manage,.framelabs-v2.gallery-open .v3-manage,.v3-picking .v3-manage{display:none!important}
+.framelabs-v2 .inspector{max-height:min(70dvh,650px)}
