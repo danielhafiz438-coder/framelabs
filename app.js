@@ -378,7 +378,8 @@ function ensureBatchThumbnails(){
       }finally{
         item.previewLoading=false;
       }
-      await new Promise(resolve=>idleTurn(resolve));
+      // Use a guaranteed task yield for batch decoding; requestIdleCallback can be starved on busy mobile pages.
+      await new Promise(resolve=>setTimeout(resolve,16));
     }
   })().finally(()=>{
     thumbWorker=null;
