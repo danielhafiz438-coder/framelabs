@@ -44,8 +44,38 @@ try{
   await page.locator('#download').click();
   const download=await dl;
   assert.ok(download.suggestedFilename().endsWith('.webp'));
+  await page.locator('.sheet-close').click();
+  await page.locator('.studio-tool[data-tool="batch"]').click();
+  const sample=await page.evaluate(()=>{
+    const c=document.createElement('canvas');c.width=96;c.height=64;
+    c.getContext('2d').fillStyle='#bb3566';c.getContext('2d').fillRect(0,0,96,64);
+    return c.toDataURL('image/png').split(',')[1];
+  });
+  const buffer=Buffer.from(sample,'base64');
+  await page.locator('#batch-input').setInputFiles([
+    {name:'shot-1.png',mimeType:'image/png',buffer},
+    {name:'shot-2.png',mimeType:'image/png',buffer},
+    {name:'shot-3.png',mimeType:'image/png',buffer}
+  ]);
+  assert.equal(await page.locator('#batch-preview-gallery .batch-preview-card').count(),3);
+  await page.waitForFunction(()=>document.querySelectorAll('#batch-preview-gallery .batch-preview-card canvas:not([hidden])').length===3,undefined,{timeout:25000});
+  await page.screenshot({path:'artifacts/v2-batch-gallery.png',fullPage:true});
+  await page.locator('.batch-preview-card').nth(1).click();
+  await page.waitForFunction(()=>!document.body.classList.contains('sheet-open')&&!document.querySelector('#batch-focus-bar').hidden);
+  assert.equal(await page.locator('#batch-focus-count').textContent(),'2 / 3');
+  assert.match(await page.locator('#photo-name').textContent(),/shot-2.png/);
+  await page.screenshot({path:'artifacts/v2-batch-focus.png',fullPage:true});
+  await page.locator('#batch-next').click();
+  await page.waitForFunction(()=>document.querySelector('#batch-focus-count').textContent==='3 / 3');
+  await page.locator('#batch-prev').click();
+  await page.waitForFunction(()=>document.querySelector('#batch-focus-count').textContent==='2 / 3');
+  await page.locator('.studio-tool[data-tool="batch"]').click();
+  assert.equal(await page.locator('#batch-preview-gallery .batch-preview-card.selected').count(),1);
+  await page.locator('#batch-clear').click();
+  assert.equal(await page.locator('#batch-preview-gallery .batch-preview-card').count(),0);
+  assert.equal(await page.locator('#batch-focus-bar').isHidden(),true);
   assert.deepEqual(errors,[],'Unexpected browser JS exception(s)');
-  console.log('PASS mobile gallery, brand, crop, sheet and WebP export smoke');
+  console.log('PASS mobile gallery, brand, crop, WebP export and 3-photo batch preview flow');
 }finally{
   await page.close();await browser.close();server.kill('SIGTERM');
 }
