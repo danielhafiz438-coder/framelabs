@@ -9,7 +9,6 @@ root.innerHTML=`
   <div class="v3-picker-top"><button type="button" id="v3-back" aria-label="Kembali">‹</button>
     <strong id="v3-heading">Recents</strong><button type="button" id="v3-cancel">Cancel</button></div>
   <p class="v3-picker-note">Foto yang kau pilih dari Photos atau Files. Tekan nombor, susun, dan semak sebelum edit.</p>
-  <div class="v3-add-row"><button type="button" id="v3-add">+ Tambah foto</button><span>Susun pilihan sebelum Finish</span></div>
   <div class="v3-picker-actions"><button type="button" id="v3-add-photos">+ Add Photos</button><span>JPG · HEIF · RAW preview</span></div>
   <div id="v3-selection-grid" class="v3-selection-grid" role="group" aria-label="Foto terpilih"></div>
   <div id="v3-selection-tray" class="v3-selection-tray" aria-label="Susunan foto"></div>
@@ -137,7 +136,6 @@ async function cancel(){
  render();
 }
 $('v3-add-photos').onclick=()=>$('photo-input').click();
-$('v3-add').onclick=()=>{if(!api.busy)$('photo-input').click();};
 $('v3-peek').onclick=previewSelected;
 $('v3-peek-back').onclick=()=>{peek=false;$('v3-peek-screen').hidden=true;};
 $('v3-back').onclick=cancel;$('v3-cancel').onclick=cancel;$('v3-finish').onclick=finish;
