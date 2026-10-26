@@ -217,6 +217,7 @@ function updateBatchFocusBar(){
   const index=batchFocus?batchQueue.indexOf(batchFocus.item):-1;
   if(index<0){bar.hidden=true;return;}
   batchFocus.index=index;bar.hidden=false;
+  const topCount=document.querySelector('.studio-counter');if(topCount)topCount.textContent=`${index+1}/${batchQueue.length}`;
   $('batch-focus-count').textContent=`${index+1} / ${batchQueue.length}`;
   $('batch-focus-name').textContent=batchFocus.item.file.name;
   $('batch-prev').disabled=busy||index===0;
@@ -228,6 +229,7 @@ function closeBatchFocus(){
   if(batchFocus?.url)URL.revokeObjectURL(batchFocus.url);
   if(batchFocus?.img)batchFocus.img.removeAttribute('src');
   batchFocus=null;
+  const topCount=document.querySelector('.studio-counter');if(topCount)topCount.textContent='1/1';
   $('batch-focus-bar').hidden=true;
   update();discardExport();
   for(const item of batchQueue)item.card?.classList.remove('selected');
