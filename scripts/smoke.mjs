@@ -32,6 +32,7 @@ try{
   await page.waitForFunction(()=>!document.querySelector('#v3-selection').hidden);
   assert.equal(await page.locator('.v3-selection-item').count(),7);
   assert.match(await page.locator('#v3-size').textContent(),/7\/30/);
+  await page.waitForFunction(()=>window.FrameLabsV3.items.every(i=>Boolean(i.previewImage)||Boolean(i.previewError)),undefined,{timeout:30000});
   await page.screenshot({path:'artifacts/v3-selection.png'});
   await page.locator('.v3-selection-item').nth(6).locator('.v3-order-tools button').first().click();
   assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name).slice(-2)),['foodfest-7.png','foodfest-6.png']);
