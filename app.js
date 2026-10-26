@@ -30,6 +30,7 @@ function setBusy(value) {
   for(const button of $('batch-list').querySelectorAll('button'))button.disabled=value;
   for(const button of $('batch-preview-gallery').querySelectorAll('button'))button.disabled=value;
   for(const id of ['batch-prev','batch-next','batch-exit']) $(id).disabled=value;
+  if(batchFocus)updateBatchFocusBar();
   $('preview').setAttribute('aria-busy',String(value));
 }
 function loadImage(src) {
@@ -289,7 +290,7 @@ function drawBatchGallery(){
   gallery.replaceChildren();
   batchQueue.forEach((item,index)=>{
     const card=document.createElement('button');card.type='button';card.className='batch-preview-card';
-    card.setAttribute('role','listitem');card.disabled=busy;
+    card.disabled=busy;
     card.setAttribute('aria-label',`Preview ${index+1} daripada ${batchQueue.length}: ${item.file.name}`);
     const media=document.createElement('span');media.className='batch-preview-media';
     const canvas=document.createElement('canvas');canvas.hidden=true;canvas.setAttribute('aria-hidden','true');
