@@ -28,6 +28,10 @@ Use **Banyak foto? Buka batch processing** below the preview, or **Pilih banyak 
 
 The current template, frame settings, caption, custom logo, format and resolution are captured when processing starts. **Auto EXIF setiap foto** reads each file independently and leaves missing camera values blank. **Guna maklumat editor untuk semua** explicitly applies the editor's camera values to every output. A batch never overwrites the editor's current photo or camera fields.
 
+### Preview semua foto batch
+
+Bila memilih banyak foto, FrameLabs menjana galeri thumbnail untuk **setiap fail** (sehingga had 30 foto), satu demi satu supaya telefon tidak perlu menyimpan semua decoder besar serentak. Thumbnail menggunakan frame, metadata mode, logo, nisbah dan tetapan suntingan semasa, bukan sekadar imej mentah. Tekan mana-mana thumbnail untuk lihat versi besar dalam editor, kemudian guna **sebelum / seterusnya** untuk semak satu demi satu. **Selesai** kembali ke foto biasa. Semua perubahan pada style dikongsi untuk batch; preview tidak mengubah fail asal atau menambah foto batch kepada simpanan kekal. Preview RAW menggunakan JPEG embedded yang tersedia; fail tidak boleh dinyahkod akan ditanda gagal pada kad.
+
 Files are decoded and rendered sequentially. A corrupt or unsupported file is reported and skipped. Cancel stops after the current operation; completed outputs remain available in a partial ZIP. The ZIP contains individually named images and `batch-report.txt`; same-name input files cannot overwrite each other. Output total is capped at 150 MB; reduce resolution or batch size when reached. ZIP STORE avoids recompressing already-compressed PNG/JPEG data.
 
 Batch files and result ZIP live only in memory for the current page session. They are not uploaded or saved to localStorage; only the selected metadata mode and existing editor settings persist. Reloading removes the batch queue and ZIP, keeping browser storage bounded.
