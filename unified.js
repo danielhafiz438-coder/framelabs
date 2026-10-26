@@ -33,12 +33,12 @@ const exportReport=document.createElement('div');exportReport.className='v3-expo
 document.querySelector('.export-section').append(exportReport);
 const exportControls=document.createElement('div');exportControls.className='v3-export-controls';exportControls.append($('batch-progress'),$('batch-cancel'),$('batch-result'));
 document.querySelector('.export-section').append(exportControls);
-let open=false,lastCommitted=[],selectedId=null,navigating=false,peek=false,returnFocus=null,returnToGallery=false;
+let open=false,lastCommitted=[],selectedId=null,navigating=false,peek=false,returnFocus=null,returnToGallery=false,activeAtReview=null;
 
 const available=()=>api.items;
 function show(){
  if(api.busy)return;
- returnToGallery=document.body.classList.contains('gallery-open');
+ returnToGallery=document.body.classList.contains('gallery-open');activeAtReview=api.activeId;
  open=true;peek=false;root.hidden=false;$('v3-peek-screen').hidden=true;
  document.body.classList.add('v3-picking');returnFocus=document.activeElement;
  document.querySelector('.studio-toolbar').inert=true;
@@ -127,10 +127,11 @@ async function finish(){
  if(document.body.classList.contains('gallery-open'))document.querySelector('[data-action=editor]')?.click();
  render();
 }
-function cancel(){
+async function cancel(){
  if(!open)return;
  const reopenGallery=returnToGallery&&lastCommitted.length===0;
  api.restore(lastCommitted);
+ if(activeAtReview&&api.activeId!==activeAtReview&&lastCommitted.some(item=>item.id===activeAtReview))await api.focus(activeAtReview);
  hide();
  if(reopenGallery)document.querySelector('.studio-back')?.click();
  render();
