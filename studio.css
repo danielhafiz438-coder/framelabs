@@ -1,6 +1,6 @@
 
 /* FrameLabs v2 — mobile-first studio, inspired by the supplied interaction references. */
-:root{--bg:#050505;--panel:#191919;--stage:#050505;--field:#29292c;--border:#444447;--subtle:#313133;--text:#f8f8fa;--muted:#a4a4ad;--accent:#3b82ff;--ink:#fff}
+:root{--bg:#050505;--panel:#191919;--stage:#050505;--field:#29292c;--border:#787881;--subtle:#313133;--text:#f8f8fa;--muted:#b8b8c0;--accent:#2164d4;--ink:#fff;--sheet-height:0px}
 html,body{min-height:100%;background:#050505}
 body.framelabs-v2{overflow:hidden}
 .framelabs-v2 .topbar{height:84px;min-height:84px;position:absolute;top:0;left:0;right:0;padding:16px max(22px,env(safe-area-inset-right)) 10px max(22px,env(safe-area-inset-left));z-index:20;background:transparent;border:0;display:flex;align-items:center;gap:12px}
@@ -12,32 +12,36 @@ body.framelabs-v2{overflow:hidden}
 .studio-round svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .studio-counter{margin:auto;position:absolute;left:50%;transform:translateX(-50%);border-radius:30px;padding:4px 21px;border:1px solid #454548;background:linear-gradient(#363639,#171719);font-size:14px;line-height:1.3;white-space:nowrap}
 .framelabs-v2 .studio{display:block;height:100dvh;min-height:0;position:relative;overflow:hidden}
-.framelabs-v2 .preview-panel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:stretch;justify-content:center;height:100dvh;max-height:none;padding:96px 12px calc(116px + env(safe-area-inset-bottom));background:#050505;overflow:hidden}
+.framelabs-v2 .preview-panel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:stretch;justify-content:center;height:100dvh;max-height:none;padding:calc(116px + env(safe-area-inset-top)) 12px calc(148px + env(safe-area-inset-bottom));background:#050505;overflow:hidden}
 .framelabs-v2 .preview-toolbar{position:absolute;top:85px;left:20px;right:20px;z-index:1;justify-content:space-between;padding:0;font-size:11px;color:#b5b5bb}
 .framelabs-v2 .preview-toolbar .eyebrow{display:none}
 .framelabs-v2 .preview-toolbar #current-template{font-size:12px;color:#a6a6ad}
 .framelabs-v2 .preview-toolbar #compare{font-size:12px;min-height:30px}
 .framelabs-v2 .preview-stage{width:100%;min-height:0;flex:1;padding:0;display:flex;align-items:center;justify-content:center}
 .framelabs-v2 .canvas-wrap{width:100%;height:100%;max-height:100%;display:flex;align-items:center;justify-content:center}
-.framelabs-v2 .canvas-wrap canvas{height:auto;width:auto;max-height:min(66dvh,100%);max-width:100%;object-fit:contain;filter:none}
+.framelabs-v2 .canvas-wrap canvas{height:auto;width:auto;max-height:100%;max-width:100%;object-fit:contain;filter:none}
 .framelabs-v2 .preview-caption{position:absolute;bottom:calc(102px + env(safe-area-inset-bottom));left:20px;right:20px;padding:2px 0;justify-content:center;border:0;font-size:10px;pointer-events:none}
 .framelabs-v2 .preview-caption #dimensions{display:none}
-.framelabs-v2 .photo-actions{position:absolute;bottom:calc(118px + env(safe-area-inset-bottom));left:20px;right:20px;justify-content:center;padding:0}
+.framelabs-v2 .photo-actions,.framelabs-v2 .preview-caption{display:none}
 .framelabs-v2 .photo-actions>*:not(#upload-main){display:none}
 .framelabs-v2 #upload-main{font-size:11px;min-height:34px;border:1px solid #444;border-radius:100px;padding:5px 12px;background:#191919ac}
 .framelabs-v2 #upload-main svg{width:15px;height:15px}
-.framelabs-v2 .preview-panel .status,.framelabs-v2 .preview-panel .batch-entry{display:none}
-.framelabs-v2 .preview-panel .error{position:absolute;top:128px;left:14px;right:14px;z-index:4;margin:0;font-size:12px;border-radius:14px}
+.framelabs-v2 .preview-panel .batch-entry{display:none}
+.framelabs-v2 #status,.framelabs-v2 #error{position:fixed;left:14px;right:14px;z-index:50;margin:0;font-size:13px;line-height:1.5;border-radius:12px;padding:12px 16px;max-width:600px;margin-inline:auto}
+.framelabs-v2 #status{bottom:calc(104px + env(safe-area-inset-bottom));background:#252528;color:#f0f0f4;border:1px solid #707077}
+.framelabs-v2 #error{top:calc(86px + env(safe-area-inset-top));background:#48251e;color:#ffe2dd}
+.framelabs-v2.gallery-open #status{bottom:calc(96px + env(safe-area-inset-bottom))}
+.framelabs-v2.sheet-open #status{bottom:calc(var(--sheet-height,320px) + 10px)}
 .studio-toolbar{position:fixed;left:0;right:0;bottom:0;z-index:25;height:calc(93px + env(safe-area-inset-bottom));background:#161617;border-top:1px solid #27272b;display:flex;align-items:flex-start;padding:8px 6px calc(10px + env(safe-area-inset-bottom));overflow-x:auto;scrollbar-width:none;gap:1px;overscroll-behavior-x:contain}
 .studio-toolbar::-webkit-scrollbar{display:none}
 .studio-tool{flex:1 0 66px;max-width:108px;min-height:67px;display:flex;align-items:center;justify-content:flex-start;flex-direction:column;gap:4px;color:#e9e9ec;border:0;background:transparent;border-radius:13px;padding:7px 4px;font-size:11px}
 .studio-tool svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
 .studio-tool.active{color:#7cadff;background:#272b36}
 .sheet-backdrop{position:fixed;inset:0;z-index:26;background:#0002;display:none}
-.framelabs-v2.sheet-open .sheet-backdrop{display:block}
+.framelabs-v2.sheet-open .sheet-backdrop{display:none}
 .framelabs-v2 .inspector{position:fixed!important;z-index:27;left:0;right:0;bottom:0;top:auto!important;height:auto;max-height:min(58dvh,520px);min-width:0;overflow-y:auto;overscroll-behavior:contain;padding:16px 22px calc(24px + env(safe-area-inset-bottom));background:#1a1a1c;border:1px solid #333337;border-bottom:0;border-radius:30px 30px 0 0;box-shadow:0 -15px 55px #0009;transform:translateY(105%);transition:transform .24s ease;visibility:hidden}
 .framelabs-v2.sheet-open .inspector{transform:translateY(0);visibility:visible}
-.framelabs-v2.sheet-open .studio-toolbar{visibility:hidden}
+.framelabs-v2.sheet-open .studio-toolbar{visibility:visible;z-index:30}
 .framelabs-v2 .inspector-title{border:0;padding:0 0 10px;position:sticky;top:-16px;background:#1a1a1c;z-index:2}
 .framelabs-v2 .inspector-title h2{font-size:20px;letter-spacing:-.02em;font-weight:600}
 .framelabs-v2 .inspector-title #reset{font-size:11px;text-decoration:none}
@@ -67,9 +71,6 @@ body.framelabs-v2{overflow:hidden}
 .framelabs-v2 .gallery-heading .wordmark{font-size:24px;font-weight:800;letter-spacing:.06em}
 .gallery-kicker{font-size:12px;font-style:italic;letter-spacing:.11em;color:#a5a6ad;margin:18px 0 22px}
 .gallery-top{display:flex;justify-content:space-between;align-items:center;gap:15px}
-.gallery-start{background:#307dff;border:0;border-radius:100px;color:#fff;padding:13px 16px;font-size:12px;font-weight:650}
-.gallery-title{font-size:31px;line-height:1.08;letter-spacing:-.04em;margin:23px 0 8px;font-weight:700}
-.gallery-sub{font-size:13px;color:#a3a3a9;margin:0 0 24px}
 .gallery-filters{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 0 32px}
 .gallery-filter{border:1px solid #48484b;background:linear-gradient(155deg,#313134,#171719);color:#ccc;padding:10px 17px;border-radius:99px;white-space:nowrap}
 .gallery-filter.active{background:#3482ff;border-color:#4e9aff;color:white}
@@ -163,3 +164,18 @@ body.framelabs-v2{overflow:hidden}
   .framelabs-v2 .batch-preview-gallery{grid-template-columns:repeat(3,minmax(0,1fr))}
   .framelabs-v2 .batch-focus-bar{left:50%;right:auto;transform:translateX(-50%);width:min(570px,95vw)}
 }
+
+.framelabs-v2 .studio-tool{flex:1 1 0;min-width:0;max-width:none;min-height:68px;padding:8px 2px;font-size:11px}
+.framelabs-v2 .inspector{bottom:calc(93px + env(safe-area-inset-bottom));max-height:min(48dvh,480px);border-radius:22px 22px 0 0;border-color:#606068}
+.framelabs-v2 .inspector[data-tool="batch"]{max-height:min(72dvh,800px)}
+.framelabs-v2.sheet-open .preview-panel{padding-bottom:calc(var(--sheet-height) + 113px + env(safe-area-inset-bottom))}
+.framelabs-v2 .inspector input[type=text],.framelabs-v2 .inspector select{font-size:16px;border-color:#787881}
+.framelabs-v2 .inspector .primary,.framelabs-v2 .gallery-dock .dock-primary{background:#2164d4;border-color:#2164d4;color:white}
+.framelabs-v2 .brand-tab,.framelabs-v2 .brand-advanced summary,.framelabs-v2 .batch-file-details summary{min-height:44px}
+.framelabs-v2 .batch-focus-bar button{min-width:44px;min-height:44px}
+.framelabs-v2 .gallery-dock svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.framelabs-v2 .header-actions #download-top{width:auto;min-width:68px;border:0;background:none;box-shadow:none;border-radius:8px;color:#9cc5ff;font-weight:650;padding:8px}
+.framelabs-v2 .header-actions #download-top svg{display:none!important}
+.framelabs-v2 .header-actions #download-top span{position:static!important;width:auto!important;height:auto!important;clip-path:none;overflow:visible!important}
+.framelabs-v2.sheet-open #status{bottom:calc(var(--sheet-height) + 104px + env(safe-area-inset-bottom))}
+@media(prefers-reduced-motion:reduce){.framelabs-v2 *{scroll-behavior:auto!important}}

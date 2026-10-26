@@ -49,7 +49,7 @@ function blurred(img,ratio,amount) {
   const ctx=c.getContext('2d',{willReadFrequently:true}); cover(ctx,img,0,0,c.width,c.height);
   const pixels=ctx.getImageData(0,0,c.width,c.height);
   boxBlur(pixels.data,c.width,c.height,Math.round(amount*.32)); ctx.putImageData(pixels,0,0);
-  if(cache.size>=12) cache.clear(); cache.set(key,c); return c;
+  if(cache.size>=3) cache.clear(); cache.set(key,c); return c;
 }
 function fitText(ctx,text,maxWidth,size,weight='400',family='system-ui, sans-serif') {
   ctx.font=`${weight} ${size}px ${family}`;
@@ -98,7 +98,7 @@ export function render(canvas,img,settings,template,options={}) {
     }else ctx.drawImage(blurred(img,l.width/l.height,s.blur),0,0,l.width,l.height);
   }
   ctx.save();roundedPath(ctx,l.pad,l.pad,l.photoW,l.photoH,s.innerRadius*10);ctx.clip();cover(ctx,img,l.pad,l.pad,l.photoW,l.photoH);ctx.restore();
-  if(template!=='white') {
+  if(template==='overlay'||(template!=='white'&&(!s.frameVariant||s.frameVariant==='original'))) {
     const start=template==='overlay' ? l.height*.55 : l.pad+l.photoH*.65;
     const gradient=ctx.createLinearGradient(0,start,0,l.height);gradient.addColorStop(0,'rgba(0,0,0,0)');gradient.addColorStop(1,`rgba(0,0,0,${s.darkness/100})`);
     if(template==='overlay') {ctx.fillStyle=gradient;ctx.fillRect(0,start,l.width,l.height-start);}

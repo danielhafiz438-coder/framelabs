@@ -18,7 +18,9 @@ Open http://127.0.0.1:4173. `dist/` contains the deployable static site. `.githu
 
 ## Use
 
-Choose a style from the gallery, select a photo, tap the Brand/Theme/Params/Height/Margin/Frame/Crop/Export/Batch bottom toolbar, then download PNG, JPEG or WebP. On desktop the same studio provides wide-screen previews. Template settings are remembered separately. Camera information and captions follow the current photo across all four templates. Apple, DJI and Fujifilm logos are bundled locally; other brands use text. Upload a raster logo to use your own mark. No assets were extracted from the reference app.
+Choose a style from the gallery, select a photo, and use the five bottom tools: **Jenama**, **Teks & EXIF**, **Bingkai**, **Nisbah**, **Batch**. **Eksport** at the top right opens format/resolution options; **Download gambar** saves the result. Settings panels remain above the toolbar so tools can be switched without closing first. Preview stays above the panel, with visible progress and errors. On desktop the same studio provides wide-screen previews. Template settings are remembered separately. Camera information and captions follow the current photo across all four templates. Apple, DJI and Fujifilm logos are bundled locally; other brands use text. Upload a raster logo to use your own mark. No assets were extracted from the reference app.
+
+The flow uses the user's screenshots and official FrameCam App Store screenshots as references. It is not verified against an installed iOS app; exact picker transitions, gestures and export-result screens remain unobserved. See DESIGN.md for the evidence boundary.
 
 EXIF camera make/model, focal length, aperture, shutter and ISO are read locally when present. Missing metadata is left blank, never inferred from image pixels. Demo specifications are explicitly illustrative. The sample photograph is by [Sebastien Gabriel on Unsplash](https://unsplash.com/photos/landscape-photography-of-seashore-Hn-vG1gwbUk), used under the [Unsplash License](https://unsplash.com/license). It is bundled locally; opening the app does not contact Unsplash.
 
