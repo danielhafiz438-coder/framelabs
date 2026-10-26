@@ -131,3 +131,35 @@ body.framelabs-v2{overflow:hidden}
 .framelabs-v2 .brand-advanced summary{min-height:35px;color:#aeb0ba;font-size:12px;cursor:pointer;padding-top:8px}
 .framelabs-v2 .brand-advanced[open] summary{color:#fff}
 .framelabs-v2 #frameVariant[hidden]{display:none!important}
+
+
+/* Batch preview gallery — sequentially decoded, locally rendered thumbnails. */
+.framelabs-v2 .inspector[data-tool="batch"]{max-height:min(87dvh,900px)}
+.framelabs-v2 .inspector[data-tool="batch"] .batch-section{padding:6px 0 15px}
+.framelabs-v2 .inspector[data-tool="batch"] .batch-section h2{display:none}
+.framelabs-v2 .batch-preview-tip{font-size:12px;margin:16px 0 12px}
+.framelabs-v2 .batch-preview-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;min-height:0;margin:14px 0}
+.framelabs-v2 .batch-preview-card{display:flex;flex-direction:column;gap:7px;align-items:stretch;text-align:left;min-width:0;background:#252528;border:1px solid #424248;padding:7px;border-radius:15px;color:#eee;cursor:pointer}
+.framelabs-v2 .batch-preview-card:disabled{cursor:wait;opacity:.78}
+.framelabs-v2 .batch-preview-card.selected{outline:2px solid #468fff;outline-offset:1px;border-color:#387aff}
+.framelabs-v2 .batch-preview-media{aspect-ratio:4/3;width:100%;background:#0b0b0c;display:grid;place-items:center;overflow:hidden;border-radius:10px;position:relative}
+.framelabs-v2 .batch-preview-media canvas{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+.framelabs-v2 .batch-preview-media .batch-thumb-placeholder{font-size:11px;color:#96969c;text-align:center;padding:9px;line-height:1.4}
+.framelabs-v2 .batch-preview-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block}
+.framelabs-v2 .batch-preview-index{font-size:10px;color:#a6a6ac;display:block}
+.framelabs-v2 #batch-preview-status{font-size:11px;margin:5px 0 10px}
+.framelabs-v2 .batch-file-details{margin:8px 0 12px;border-bottom:1px solid #404044}
+.framelabs-v2 .batch-file-details summary{font-size:12px;min-height:39px;color:#b8b8bf;cursor:pointer}
+.framelabs-v2 .batch-focus-bar{position:fixed;z-index:22;left:12px;right:12px;bottom:calc(101px + env(safe-area-inset-bottom));display:flex;gap:7px;align-items:center;justify-content:center;padding:8px;background:#1b1b1ded;border:1px solid #49494f;border-radius:18px;backdrop-filter:blur(12px)}
+.framelabs-v2 .batch-focus-bar[hidden]{display:none!important}
+.framelabs-v2 .batch-focus-bar button{display:grid;place-items:center;flex:0 0 auto;min-height:36px;min-width:36px;border:1px solid #505058;border-radius:11px;color:#fff;background:#303036;font-size:22px}
+.framelabs-v2 .batch-focus-bar button:disabled{opacity:.35}
+.framelabs-v2 .batch-focus-bar #batch-exit{font-size:11px;min-width:57px;background:#317ef6;border-color:#317ef6;padding:0 9px}
+.framelabs-v2 .batch-focus-detail{display:flex;flex-direction:column;min-width:0;flex:1;align-items:center;gap:1px}
+.framelabs-v2 .batch-focus-detail b{font-size:12px;color:#f6f6f9}
+.framelabs-v2 .batch-focus-detail span{display:block;max-width:100%;font-size:10px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.framelabs-v2.sheet-open .batch-focus-bar,.framelabs-v2.gallery-open .batch-focus-bar{visibility:hidden}
+@media(min-width:700px){
+  .framelabs-v2 .batch-preview-gallery{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .framelabs-v2 .batch-focus-bar{left:50%;right:auto;transform:translateX(-50%);width:min(570px,95vw)}
+}
