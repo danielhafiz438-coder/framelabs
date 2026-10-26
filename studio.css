@@ -101,3 +101,15 @@ body.framelabs-v2{overflow:hidden}
 }
 @media(max-width:380px){.framelabs-v2 .topbar{padding:14px}.framelabs-v2 .header-actions .button,.studio-round{width:46px;height:46px;min-height:46px}.studio-counter{font-size:12px;padding:4px 14px}.framelabs-v2 .brand-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.framelabs-v2 .inspector{transition:none}}
+
+/* Keep studio tool filtering separate from template-specific form visibility. */
+.framelabs-v2 [data-studio-hidden="true"]{display:none!important}
+.framelabs-v2 .gallery-dock{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:5px;border-radius:100px;border:1px solid #48484c;background:linear-gradient(160deg,#343438e8,#181819ef);box-shadow:0 8px 30px #000b;backdrop-filter:blur(18px);z-index:35;width:min(340px,90vw);justify-content:space-around}
+.framelabs-v2 .gallery-dock button{flex:1;border:0;border-radius:100px;background:transparent;color:#c6c6ce;display:flex;align-items:center;justify-content:center;gap:6px;min-height:52px;font-size:18px}
+.framelabs-v2 .gallery-dock button span{font-size:12px}
+.framelabs-v2 .gallery-dock button.dock-primary{background:#317cfa;color:#fff;font-weight:750}
+.framelabs-v2 .template-panel .gallery-kicker{opacity:.85}
+.framelabs-v2 .template-panel .gallery-filters{max-width:1050px;margin-left:auto;margin-right:auto}
+.framelabs-v2 .template-panel .gallery-title,.framelabs-v2 .template-panel .gallery-sub{max-width:1050px;margin-left:auto;margin-right:auto}
+.framelabs-v2 .template-panel .gallery-note{max-width:1050px;margin-left:auto;margin-right:auto}
+.framelabs-v2 .sheet-close:focus-visible,.framelabs-v2 .studio-tool:focus-visible,.framelabs-v2 .brand-choice:focus-visible{outline:2px solid #86b3ff;outline-offset:3px}
