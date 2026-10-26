@@ -251,7 +251,7 @@ async function encodePhoto(img,s,key,mark) {
   const size=exportSize(layout,img.naturalWidth,img.naturalHeight,s.resolution),canvas=document.createElement('canvas');
   try{
     render(canvas,img,s,key,{...size,logo:mark,brandLogo:brandLogos[s.brand],jpeg:s.format==='jpeg'});
-    const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Eksport gagal. Cuba saiz 2048 px.')),`image/${s.format}`,.95));
+    const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Eksport gagal. Cuba saiz 2048 px.')),`image/${s.format}`,Math.max(.5,Math.min(1,(s.quality||95)/100))));
     if(!blob.size)throw new Error('Hasil kosong. Cuba saiz 2048 px.');
     if(s.format==='webp'&&blob.type!=='image/webp')throw new Error('Browser ini tidak menyokong eksport WebP. Pilih PNG atau JPEG.');
     return {blob,size};
