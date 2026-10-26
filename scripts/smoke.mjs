@@ -32,7 +32,17 @@ try{
   await page.waitForFunction(()=>!document.querySelector('#v3-selection').hidden);
   assert.equal(await page.locator('.v3-selection-item').count(),7);
   assert.match(await page.locator('#v3-size').textContent(),/7\/30/);
-  await page.waitForFunction(()=>window.FrameLabsV3.items.every(i=>Boolean(i.previewImage)||Boolean(i.previewError)),undefined,{timeout:30000});
+  try{
+    await page.waitForFunction(()=>window.FrameLabsV3.items.every(i=>Boolean(i.previewImage)||Boolean(i.previewError)),undefined,{timeout:12000});
+  }catch(e){
+    console.error('THUMBNAIL DEBUG',JSON.stringify(await page.evaluate(()=>({
+      busy:window.FrameLabsV3.busy,
+      items:window.FrameLabsV3.items.map(i=>({id:i.id,loaded:!!i.previewImage,error:i.previewError,loading:i.previewLoading,task:!!i.previewTask,metadata:!!i.metadata})),
+      status:document.querySelector('#batch-preview-status').textContent,
+      pageErrors:document.querySelector('#error').textContent
+    }))));
+    throw e;
+  }
   await page.screenshot({path:'artifacts/v3-selection.png'});
   await page.locator('.v3-selection-item').nth(6).locator('.v3-order-tools button').first().click();
   assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name).slice(-2)),['foodfest-7.png','foodfest-6.png']);
