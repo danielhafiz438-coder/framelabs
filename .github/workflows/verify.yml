@@ -15,3 +15,12 @@ jobs:
       - run: npm install --ignore-scripts --no-audit --no-fund
       - run: npm run check
       - run: npm run build
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: mkdir -p artifacts && node scripts/smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: framelabs-v2-mobile-preview
+          path: artifacts/v2-mobile.png
+          if-no-files-found: ignore
