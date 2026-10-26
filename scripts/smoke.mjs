@@ -27,7 +27,7 @@ try{
   assert.equal(await page.locator('#frameVariant').inputValue(),'pastel');
   await page.screenshot({path:'artifacts/v2-frame-sheet.png',fullPage:true});
   await page.locator('.sheet-close').click();
-  assert.ok(await page.locator('[data-tool="frame"]').evaluate(el=>el===document.activeElement),'closing panel restores tool focus');
+  assert.ok(await page.locator('.studio-tool[data-tool="frame"]').evaluate(el=>el===document.activeElement),'closing panel restores tool focus');
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),false);
   await page.locator('.studio-tool[data-tool="brand"]').click();
   assert.equal(await page.locator('.inspector').getAttribute('data-tool'),'brand');
@@ -67,7 +67,7 @@ try{
   assert.equal(await page.locator('#batch-focus-count').textContent(),'2 / 3');
   assert.match(await page.locator('#photo-name').textContent(),/shot-2.png/);
   await page.screenshot({path:'artifacts/v2-batch-focus.png',fullPage:true});
-  await page.locator('[data-tool="params"]').click();
+  await page.locator('.studio-tool[data-tool="params"]').click();
   assert.ok(await page.locator('#iso').evaluate(el=>el.readOnly),'auto EXIF is per focused photo, not editable stale editor metadata');
   await page.locator('#download-top').click();
   await page.locator('#format').selectOption('png');
