@@ -46,7 +46,9 @@ inspector.querySelector('.inspector-title').append(close);close.addEventListener
 
 const fieldSets={
 frame:['padding','radius','innerRadius','blur','darkness','frameColor','textColor'],
-crop:['ratio']
+theme:['blur','darkness','frameColor','textColor','frameVariant'],
+margin:['padding','radius','innerRadius'],
+crop:['ratio','cropZoom','cropX','cropY']
 };
 const sheetNames={brand:'Jenama & Logo',theme:'Theme',text:'Text & Caption',params:'Maklumat Kamera',margin:'Margin',frame:'Bingkai',crop:'Crop & Nisbah',export:'Eksport Foto',batch:'Batch Processing'};
 let returnFocus=null;
@@ -73,7 +75,14 @@ function setFields(tool){
    for(const child of field.children){
     if(child.tagName==='LEGEND')continue;
     // CSS hides unrelated tools; preserve the original renderer's template-specific hidden state.
-    child.dataset.studioHidden=String(!(tool==='frame'&&child.id==='frame-palette') && !(tool==='crop'&&child.id==='v3-crop-controls')&&!ids.some(id=>includesControl(child,id)));
+    child.dataset.studioHidden=String(!((tool==='frame'||tool==='theme')&&child.id==='frame-palette') && !(tool==='crop'&&child.id==='v3-crop-controls')&&!ids.some(id=>includesControl(child,id)));
+   }
+  }
+  if(i===2){
+   for(const child of field.children){
+    if(child.tagName==='LEGEND')continue;
+    const isText=['textSize','caption'].some(key=>includesControl(child,key));
+    child.dataset.studioHidden=String(tool==='text'?!isText:(tool==='params'?isText:true));
    }
   }
  });
