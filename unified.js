@@ -149,7 +149,11 @@ function syncExport(){
  $('v3-export-report').textContent=txt;
  const progress=$('batch-progress');progress.hidden=progress.max<=0;
 }
-document.addEventListener('framelabs:selection',()=>{render();if(!open)show();});
+document.addEventListener('framelabs:selection',()=>{
+ const size=available().length;
+ if(size>lastSelection)selectedId=available()[lastSelection]?.id||selectedId;
+ lastSelection=size;render();if(!open)show();
+});
 document.addEventListener('framelabs:preview-ready',()=>{if(open)render();});
 document.addEventListener('framelabs:focus',()=>{render();refreshScope();});
 document.addEventListener('framelabs:scope',refreshScope);
