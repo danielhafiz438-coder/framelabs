@@ -13,12 +13,16 @@ test('auto metadata replaces stale camera values per file; editor mode is explic
 });
 test('file validation rejects non-photos, empty and oversize files',()=>{
   assert.doesNotThrow(()=>validatePhotoFile({name:'photo.HEIC',size:1000}));
+  for(const name of ['pic.avif','pic.HEIF','pic.ARW','pic.DNG','pic.CR3'])assert.doesNotThrow(()=>validatePhotoFile({name,size:50000}));
+  assert.doesNotThrow(()=>validatePhotoFile({name:'photo.ARW',size:60*1024*1024}));
+  assert.throws(()=>validatePhotoFile({name:'photo.ARW',size:151*1024*1024}));
   for(const file of [{name:'script.svg',size:100},{name:'empty.png',size:0},{name:'huge.jpg',size:41*1024*1024}])assert.throws(()=>validatePhotoFile(file));
 });
 test('ZIP output names retain Unicode and cannot escape an archive directory',()=>{
   const name=outputName('../../senja 📷.jpg',0,'soft','png');
   assert.ok(!/[\\/]/.test(name));assert.ok(name.startsWith('001-'));assert.ok(name.endsWith('-soft.png'));assert.ok(name.includes('📷'));
   assert.notEqual(outputName('same.jpg',0,'soft','jpeg'),outputName('same.jpg',1,'soft','jpeg'));
+  assert.equal(outputName('image.heif',0,'soft','webp'),'001-image-soft.webp');
 });
 test('CRC-32 matches standard check vector and empty file',()=>{
   assert.equal(crc32(new TextEncoder().encode('123456789')),0xcbf43926);

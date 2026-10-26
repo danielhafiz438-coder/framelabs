@@ -3,8 +3,9 @@ export const BATCH_INPUT_LIMIT = 300 * 1024 * 1024;
 export const BATCH_OUTPUT_LIMIT = 150 * 1024 * 1024;
 
 export function validatePhotoFile(file) {
-  if (!/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) throw new Error('Pilih fail JPG, PNG, WebP atau HEIC.');
-  if (!file.size || file.size > 40 * 1024 * 1024) throw new Error('Saiz foto mesti antara 1 bait hingga 40 MB.');
+  if (!/\.(jpe?g|png|webp|avif|heic|heif|hif|arw|cr2|cr3|nef|nrw|dng|raf|rw2|orf|pef|srw|3fr|iiq|erf|raw)$/i.test(file.name)) throw new Error('Format tidak disokong. Cuba JPG, PNG, WebP, AVIF, HEIF atau RAW kamera.');
+  const limit = /\.(arw|cr2|cr3|nef|nrw|dng|raf|rw2|orf|pef|srw|3fr|iiq|erf|raw)$/i.test(file.name) ? 150 : 40;
+  if (!file.size || file.size > limit * 1024 * 1024) throw new Error('Saiz fail mesti antara 1 bait hingga '+limit+' MB.');
 }
 
 export function batchSettings(base, metadata, mode) {
@@ -13,7 +14,7 @@ export function batchSettings(base, metadata, mode) {
 
 export function outputName(name, index, template, format) {
   const stem = Array.from(name.replace(/\.[^.]*$/, '').replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, '-').replace(/^\.+/, '').trim()).slice(0, 70).join('') || 'foto';
-  return `${String(index + 1).padStart(3, '0')}-${stem}-${template}.${format === 'jpeg' ? 'jpg' : 'png'}`;
+  return `${String(index + 1).padStart(3, '0')}-${stem}-${template}.${format === 'jpeg' ? 'jpg' : format === 'webp' ? 'webp' : 'png'}`;
 }
 
 const crcTable = Uint32Array.from({ length: 256 }, (_, n) => {

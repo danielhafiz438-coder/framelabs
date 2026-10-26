@@ -4,13 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#191a18">
-  <meta name="description" content="Empat template bingkai foto. Edit dan simpan terus pada peranti, tanpa akaun atau upload ke server.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="description" content="Edit foto dan buat bingkai kamera pada peranti. Galeri gaya, EXIF, RAW preview, HEIF, batch processing dan export.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>FRAMELABS · Studio bingkai foto</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./studio.css">
   <script src="./vendor/exifr-7.1.3.js" defer></script>
   <script src="./app.js" type="module"></script>
+  <script src="./studio.js" type="module"></script>
 </head>
 <body>
   <a class="skip-link" href="#editor">Terus ke editor</a>
@@ -50,7 +52,7 @@
       <div class="inspector-title"><h2>Sesuaikan</h2><button id="reset" class="text-button">Reset gaya</button></div>
       <form id="settings" autocomplete="off">
         <fieldset class="settings-section"><legend>Bingkai</legend>
-          <label class="field-label" for="ratio">Nisbah foto</label><select id="ratio" name="ratio"><option value="original">Asal · tanpa crop</option><option value="3:2">3:2 · Landskap</option><option value="4:3">4:3 · Klasik</option><option value="1:1">1:1 · Petak</option><option value="4:5">4:5 · Potret</option><option value="9:16">9:16 · Story</option></select>
+          <label class="field-label" for="ratio">Nisbah foto</label><select id="ratio" name="ratio"><option value="original">Asal · tanpa crop</option><option value="3:2">3:2 · Landskap</option><option value="4:3">4:3 · Klasik</option><option value="1:1">1:1 · Petak</option><option value="4:5">4:5 · Potret</option><option value="2:3">2:3 · Potret kamera</option><option value="16:9">16:9 · Video</option><option value="5:4">5:4 · Klasik</option><option value="9:16">9:16 · Story</option></select>
           <div class="range-field" data-control="padding"><label for="padding">Ketebalan bingkai <output for="padding" id="padding-value"></output></label><input id="padding" name="padding" type="range" min="2" max="14" step="0.5"></div>
           <div class="range-field" data-control="radius"><label for="radius">Bucu luar <output for="radius" id="radius-value"></output></label><input id="radius" name="radius" type="range" min="0" max="8" step="0.5"></div>
           <div class="range-field" data-control="innerRadius"><label for="innerRadius">Bucu foto <output for="innerRadius" id="innerRadius-value"></output></label><input id="innerRadius" name="innerRadius" type="range" min="0" max="10" step="0.5"></div>
@@ -60,7 +62,7 @@
           <label class="color-field" for="textColor"><span>Warna tulisan</span><input id="textColor" name="textColor" type="color" value="#ffffff"></label>
         </fieldset>
         <fieldset class="settings-section"><legend>Identiti foto</legend>
-          <label class="field-label" for="brand">Jenama</label><select id="brand" name="brand"><option value="IPHONE">iPhone</option><option value="FUJIFILM">Fujifilm</option><option value="DJI">DJI</option><option value="SONY">Sony</option><option value="CANON">Canon</option><option value="NIKON">Nikon</option><option value="LUMIX">Lumix</option><option value="LEICA">Leica</option><option value="HASSELBLAD">Hasselblad</option><option value="CUSTOM">Teks sendiri</option></select>
+          <label class="field-label" for="brand">Jenama</label><select id="brand" name="brand"><option value="IPHONE">iPhone</option><option value="FUJIFILM">Fujifilm</option><option value="DJI">DJI</option><option value="SONY">Sony</option><option value="XIAOMI">Xiaomi</option><option value="GOPRO">GoPro</option><option value="INSTA360">Insta360</option><option value="CANON">Canon</option><option value="NIKON">Nikon</option><option value="LUMIX">Lumix</option><option value="LEICA">Leica</option><option value="HASSELBLAD">Hasselblad</option><option value="CUSTOM">Teks sendiri</option></select>
           <label class="field-label" for="camera">Nama kamera / tajuk</label><input id="camera" name="camera" type="text" maxlength="64" placeholder="Contoh: IPHONE 16 PRO">
           <div class="logo-row"><button id="upload-logo" class="button secondary" type="button">Tambah logo sendiri</button><button id="remove-logo" class="text-button" type="button" hidden>Buang logo</button></div>
           <p class="helper">Logo PNG, JPG atau WebP. PNG lutsinar paling sesuai.</p>
@@ -74,8 +76,8 @@
           <div class="field-grid"><div><label class="field-label" for="focal">Focal length</label><input id="focal" name="focal" type="text" maxlength="20" placeholder="85mm"></div><div><label class="field-label" for="aperture">Aperture</label><input id="aperture" name="aperture" type="text" maxlength="20" placeholder="f/4"></div><div><label class="field-label" for="shutter">Shutter</label><input id="shutter" name="shutter" type="text" maxlength="20" placeholder="1/250s"></div><div><label class="field-label" for="iso">ISO</label><input id="iso" name="iso" type="text" maxlength="20" placeholder="400"></div></div>
         </fieldset>
         <fieldset class="settings-section export-section"><legend>Simpan hasil</legend>
-          <div class="field-grid"><div><label class="field-label" for="format">Format</label><select id="format" name="format"><option value="png">PNG</option><option value="jpeg">JPEG</option></select></div><div><label class="field-label" for="resolution">Sisi terpanjang</label><select id="resolution" name="resolution"><option value="original">Ikut foto</option><option value="2048">2048 px</option><option value="4096">4096 px</option></select></div></div>
-          <p class="helper">PNG kekalkan sudut lutsinar. JPEG gunakan latar hitam. Eksport maksimum 4096 px.</p>
+          <div class="field-grid"><div><label class="field-label" for="format">Format</label><select id="format" name="format"><option value="png">PNG</option><option value="jpeg">JPEG</option><option value="webp">WebP</option></select></div><div><label class="field-label" for="resolution">Sisi terpanjang</label><select id="resolution" name="resolution"><option value="original">Ikut foto</option><option value="2048">2048 px</option><option value="4096">4096 px</option></select></div></div>
+          <p class="helper">PNG/WebP boleh kekalkan sudut lutsinar. JPEG gunakan latar hitam. Eksport maksimum 4096 px.</p>
           <button id="download" type="button" class="button primary full-width">Download gambar</button>
           <a id="export-link" class="export-link" hidden>Simpan / buka hasil sekali lagi</a>
         </fieldset>
@@ -88,20 +90,31 @@
         <p class="helper" id="batch-mode-help">Jika EXIF tiada, maklumat kamera dibiarkan kosong. Kapsyen dan logo sendiri ikut editor.</p>
         <div class="batch-actions"><button type="button" id="batch-select" class="button secondary">Pilih banyak foto</button><button type="button" id="batch-clear" class="text-button" disabled>Kosongkan senarai</button></div>
         <p id="batch-count" class="helper">Belum ada foto dipilih.</p>
-        <ol id="batch-list" class="batch-list" aria-label="Senarai foto batch"></ol>
+        <p class="helper batch-preview-tip">Preview setiap gambar menggunakan template dan tetapan semasa. Tekan gambar untuk lihat besar; fail asal tidak berubah.</p>
+        <div id="batch-preview-gallery" class="batch-preview-gallery" role="group" aria-label="Pratonton semua foto batch"></div>
+        <p id="batch-preview-status" class="helper" role="status" aria-live="polite">Pilih foto untuk menjana preview.</p>
+        <details class="batch-file-details"><summary>Lihat nama fail dan status pemprosesan</summary>
+          <ol id="batch-list" class="batch-list" aria-label="Senarai foto batch"></ol>
+        </details>
         <progress id="batch-progress" max="1" value="0" aria-label="Kemajuan batch" hidden></progress>
         <p id="batch-status" class="helper" role="status" aria-live="polite">Senarai batch hanya untuk sesi ini; tiada foto dihantar ke server.</p>
         <button type="button" id="batch-run" class="button primary full-width" disabled>Proses & download ZIP</button>
         <button type="button" id="batch-cancel" class="button secondary full-width" hidden>Hentikan batch</button>
         <a id="batch-result" class="export-link" hidden>Download ZIP hasil batch</a>
       </section>
-      <details class="storage-details"><summary>Simpanan & privasi</summary><p>Tetapan, logo dan salinan foto (maksimum 2048 px) disimpan dalam localStorage browser ini. Foto asal digunakan sehingga halaman ditutup. Selepas dibuka semula, eksport menggunakan salinan yang disimpan.</p><p>JPG, PNG dan WebP disokong. HEIC bergantung pada browser; jika gagal, tukarkan kepada JPG dahulu. GPS tidak dipaparkan atau dimasukkan dalam hasil eksport.</p><button type="button" id="clear-storage" class="text-button danger">Padam simpanan peranti</button></details>
+      <details class="storage-details"><summary>Simpanan & privasi</summary><p>Tetapan, logo dan salinan foto (maksimum 2048 px) disimpan dalam localStorage browser ini. Foto asal digunakan sehingga halaman ditutup. Selepas dibuka semula, eksport menggunakan salinan yang disimpan.</p><p>JPG, PNG, WebP, AVIF dan HEIC/HEIF boleh diimport. RAW menggunakan preview JPEG yang terkandung dalam fail, bukan data RAW sensor penuh. Untuk HEIF, decoder lokal disediakan jika browser tiada sokongan. GPS tidak dipaparkan atau dimasukkan dalam hasil eksport.</p><button type="button" id="clear-storage" class="text-button danger">Padam simpanan peranti</button></details>
     </aside>
   </main>
+  <nav id="batch-focus-bar" class="batch-focus-bar" aria-label="Navigasi preview batch" hidden>
+    <button id="batch-prev" type="button" aria-label="Gambar sebelumnya">‹</button>
+    <div class="batch-focus-detail"><b id="batch-focus-count">1 / 1</b><span id="batch-focus-name"></span></div>
+    <button id="batch-next" type="button" aria-label="Gambar seterusnya">›</button>
+    <button id="batch-exit" type="button" aria-label="Kembali kepada foto editor">Selesai</button>
+  </nav>
   <footer class="footer"><span>FRAMELABS <span class="footer-divider">/</span> Foto kau. Bingkai kau.</span><span>Diproses dalam browser · Tanpa login</span></footer>
-  <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" hidden>
+  <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif,.hif,.arw,.cr2,.cr3,.nef,.nrw,.dng,.raf,.rw2,.orf,.pef,.srw,.3fr,.iiq,.erf,.raw" hidden>
   <input id="logo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden>
-  <input id="batch-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple hidden>
+  <input id="batch-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif,.hif,.arw,.cr2,.cr3,.nef,.nrw,.dng,.raf,.rw2,.orf,.pef,.srw,.3fr,.iiq,.erf,.raw" multiple hidden>
   <dialog id="clear-dialog"><h2>Padam simpanan peranti?</h2><p>Tetapan, salinan foto dan logo FRAMELABS dalam browser ini akan dipadam. Fail asal dalam peranti tidak terjejas.</p><div class="dialog-actions"><button class="button secondary" id="cancel-clear">Batal</button><button class="button primary" id="confirm-clear">Padam simpanan</button></div></dialog>
   <noscript>Aktifkan JavaScript untuk mengedit dan mengeksport foto. Semua pemprosesan berlaku dalam browser.</noscript>
 </body>

@@ -1,5 +1,6 @@
 import { STORAGE_KEY, TEMPLATE_NAMES, DEFAULTS, STYLE_DEFAULTS, freshStyles, sanitizeSettings, parseProject, saveProject, layoutFor, exportSize, metadataSettings } from './core.js';
 import { render } from './renderer.js';
+import { openPhoto } from './image-io.js';
 import { BATCH_LIMIT, BATCH_INPUT_LIMIT, BATCH_OUTPUT_LIMIT, validatePhotoFile, batchSettings, outputName, createZip } from './batch.js';
 
 const $ = id => document.getElementById(id);
@@ -12,6 +13,7 @@ let photoName=saved?.photoName||'Foto contoh · Sebastien Gabriel', isDemo=!phot
 let comparing=false, busy=false, importing=false, saveTimer, frame=0, exportURL=null, restored=Boolean(photoData);
 const brandLogos={};
 let batchQueue=[], batchURL=null, batchCancelled=false;
+let batchFocus=null, batchFocusRequest=0, thumbWorker=null, thumbPaintTimer=0;
 $('batch-metadata').value=saved?.batchMode||'auto';
 const sharedKeys=new Set(['brand','camera','caption','focal','aperture','shutter','iso','showExif','showBrand']);
 const style=()=>styles[template];
@@ -26,6 +28,9 @@ function setBusy(value) {
   $('batch-clear').disabled=value||!batchQueue.length;
   $('batch-run').disabled=value||!batchQueue.length;
   for(const button of $('batch-list').querySelectorAll('button'))button.disabled=value;
+  for(const button of $('batch-preview-gallery').querySelectorAll('button'))button.disabled=value;
+  for(const id of ['batch-prev','batch-next','batch-exit']) $(id).disabled=value;
+  if(batchFocus)updateBatchFocusBar();
   $('preview').setAttribute('aria-busy',String(value));
 }
 function loadImage(src) {
@@ -75,18 +80,26 @@ function syncForm() {
   $('current-template').textContent=TEMPLATE_NAMES[template];
   $('exif-status').textContent=isDemo?'Foto contoh menggunakan maklumat ilustrasi. Semua boleh diedit.':exifFound?'Maklumat EXIF dibaca daripada foto. Semak atau ubah sebelum eksport.':'EXIF tiada / tidak dapat dibaca. Isi maklumat sendiri atau sembunyikannya.';
 }
-function dimensions() {
-  const l=layoutFor(photo.naturalWidth,photo.naturalHeight,{...style(),hasLogo:Boolean(logo)},template);
-  return exportSize(l,photo.naturalWidth,photo.naturalHeight,style().resolution);
+function effectiveBatchSettings(item) {
+  return sanitizeSettings(batchSettings({...style()},item.metadata?.metadata,$('batch-metadata').value));
+}
+function dimensions(img=photo, settings=style()) {
+  const l=layoutFor(img.naturalWidth||img.width,img.naturalHeight||img.height,{...settings,hasLogo:Boolean(logo)},template);
+  return exportSize(l,img.naturalWidth||img.width,img.naturalHeight||img.height,settings.resolution);
 }
 function renderPreview() {
-  if(!photo)return;
+  const img=batchFocus?.img||photo;
+  if(!img)return;
+  const settings=batchFocus?effectiveBatchSettings(batchFocus.item):style();
+  const w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
   if(comparing) {
-    const k=1400/Math.max(photo.naturalWidth,photo.naturalHeight);preview.width=Math.round(photo.naturalWidth*k);preview.height=Math.round(photo.naturalHeight*k);preview.getContext('2d').drawImage(photo,0,0,preview.width,preview.height);
-  } else render(preview,photo,style(),template,{logo,brandLogo:brandLogos[style().brand]});
-  preview.setAttribute('aria-label',comparing?'Foto asal tanpa bingkai':`Pratonton foto dengan bingkai ${TEMPLATE_NAMES[template]}`);
-  const size=dimensions();$('dimensions').textContent=`${size.width} × ${size.height} px`;
-  $('photo-name').textContent=restored?`${photoName} · salinan tersimpan`:photoName;
+    const k=Math.min(1,1400/Math.max(w,h));preview.width=Math.max(1,Math.round(w*k));preview.height=Math.max(1,Math.round(h*k));
+    preview.getContext('2d').drawImage(img,0,0,preview.width,preview.height);
+  } else render(preview,img,settings,template,{logo,brandLogo:brandLogos[settings.brand]});
+  const label=batchFocus?`Pratonton batch ${batchFocus.index+1} daripada ${batchQueue.length}`:`Pratonton foto dengan bingkai ${TEMPLATE_NAMES[template]}`;
+  preview.setAttribute('aria-label',comparing?'Foto asal tanpa bingkai':label);
+  const size=dimensions(img,settings);$('dimensions').textContent=`${size.width} × ${size.height} px`;
+  $('photo-name').textContent=batchFocus?`Batch ${batchFocus.index+1}/${batchQueue.length} · ${batchFocus.item.file.name}`:restored?`${photoName} · salinan tersimpan`:photoName;
 }
 function renderThumbnails() {
   if(!photo)return;
@@ -104,7 +117,7 @@ function discardExport() {if(exportURL)URL.revokeObjectURL(exportURL);exportURL=
 function selectTemplate(key) {
   if(!Object.hasOwn(TEMPLATE_NAMES,key))return;
   template=key;comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';
-  syncForm();update();queueSave();discardExport();
+  syncForm();update();queueSave();discardExport();scheduleBatchThumbPaint();
 }
 form.addEventListener('submit',e=>e.preventDefault());
 form.addEventListener('input',e=>{
@@ -119,7 +132,7 @@ form.addEventListener('input',e=>{
   styles[template]=sanitizeSettings(styles[template]);
   const out=$(`${key}-value`);if(out)out.value=key==='textSize'||key==='darkness'?`${value}%`:key==='blur'?String(value):`${value}%`;
   comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';
-  update(true);queueSave();discardExport();
+  update(true);queueSave();discardExport();scheduleBatchThumbPaint();
 });
 for(const button of document.querySelectorAll('[data-template]'))button.addEventListener('click',()=>selectTemplate(button.dataset.template));
 for(const id of ['upload-top','upload-main'])$(id).addEventListener('click',()=>$('photo-input').click());
@@ -130,8 +143,9 @@ async function importPhoto(file) {
   let url;
   try {
     validatePhotoFile(file);
-    url=URL.createObjectURL(file);
-    const next=await loadImage(url);
+    closeBatchFocus();
+    const loaded=await openPhoto(file);url=loaded.url;
+    const next=loaded.img;
     if(next.naturalWidth*next.naturalHeight>96000000)throw new Error('Foto melebihi 96 megapiksel. Kecilkan foto dahulu.');
     const {metadata,found}=await readMetadata(file);
     let copy=null;try{copy=compactPhoto(next);}catch{message('Foto dibuka. Salinan tidak dapat disimpan; download sebelum menutup halaman.');}
@@ -139,7 +153,7 @@ async function importPhoto(file) {
     for(const key of Object.keys(styles))styles[key]=sanitizeSettings({...styles[key],...metadata});
     comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';discardExport();
     syncForm();renderPreview();renderThumbnails();persist();
-    message(copy?(found?'Foto sedia. Maklumat kamera dibaca secara automatik.':'Foto sedia. EXIF tiada; isi maklumat kamera sendiri jika perlu.'):'Foto sedia untuk eksport. Salinan foto tidak disimpan dalam browser.');
+    message(loaded.warning|| (copy?(found?'Foto sedia. Maklumat kamera dibaca secara automatik.':'Foto sedia. EXIF tiada; isi maklumat kamera sendiri jika perlu.'):'Foto sedia untuk eksport. Salinan foto tidak disimpan dalam browser.'));
   }catch(e){error(e.message||'Foto tidak dapat dibuka. Cuba fail lain.');message('Foto sebelumnya dikekalkan.');}
   finally{if(url)URL.revokeObjectURL(url);setBusy(false);importing=false;$('photo-input').value='';}
 }
@@ -152,12 +166,12 @@ $('logo-input').addEventListener('change',async e=>{
     url=URL.createObjectURL(file);const img=await loadImage(url);
     let data=rasterCopy(img,512,'image/png');if(data.length>650000)data=rasterCopy(img,320,'image/png');
     if(data.length>650000)throw new Error('Logo terlalu kompleks. Cuba logo yang lebih kecil.');
-    const next=await loadImage(data);logo=next;logoData=data;syncForm();update(true);persist();discardExport();message('Logo sendiri ditambah.');
+    const next=await loadImage(data);logo=next;logoData=data;syncForm();update(true);persist();discardExport();scheduleBatchThumbPaint();message('Logo sendiri ditambah.');
   }catch(e){error(e.message);}finally{if(url)URL.revokeObjectURL(url);e.target.value='';setBusy(false);}
 });
-$('remove-logo').addEventListener('click',()=>{logo=null;logoData=null;syncForm();update(true);persist();discardExport();message('Logo dibuang daripada projek.');});
+$('remove-logo').addEventListener('click',()=>{logo=null;logoData=null;syncForm();update(true);persist();discardExport();scheduleBatchThumbPaint();message('Logo dibuang daripada projek.');});
 $('compare').addEventListener('click',()=>{comparing=!comparing;$('compare').setAttribute('aria-pressed',String(comparing));$('compare').textContent=comparing?'Kembali ke bingkai':'Lihat asal';update();});
-$('reset').addEventListener('click',()=>{styles[template]={...style(),...STYLE_DEFAULTS[template],textSize:100,ratio:'original'};syncForm();update(true);queueSave();discardExport();message('Tetapan bingkai direset. Foto dan tulisan dikekalkan.');});
+$('reset').addEventListener('click',()=>{styles[template]={...style(),...STYLE_DEFAULTS[template],textSize:100,ratio:'original'};syncForm();update(true);queueSave();discardExport();scheduleBatchThumbPaint();message('Tetapan bingkai direset. Foto dan tulisan dikekalkan.');});
 async function useDemo(save=true,preserveMetadata=false) {
   const next=await loadImage('./assets/demo-coast.jpg');photo=next;photoData=null;photoName='Foto contoh · Sebastien Gabriel';isDemo=true;restored=false;exifFound=false;
   if(!preserveMetadata)for(const key of Object.keys(styles))for(const field of ['brand','camera','focal','aperture','shutter','iso'])styles[key][field]=DEFAULTS[field];
@@ -170,10 +184,10 @@ async function download() {
   error('');setBusy(true);message('Menyediakan gambar…');
   try {
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-    const s={...style()}, chosen=template;
-    const {blob,size}=await encodePhoto(photo,s,chosen,logo);
+    const s=batchFocus?effectiveBatchSettings(batchFocus.item):{...style()}, chosen=template;
+    const {blob,size}=await encodePhoto(batchFocus?.img||photo,s,chosen,logo);
     discardExport();exportURL=URL.createObjectURL(blob);
-    const a=$('export-link');a.href=exportURL;a.download=`framelabs-${chosen}-${Date.now()}.${s.format==='jpeg'?'jpg':'png'}`;a.hidden=false;a.click();
+    const a=$('export-link');a.href=exportURL;a.download=`framelabs-${chosen}-${batchFocus?'batch-'+(batchFocus.index+1)+'-':''}${Date.now()}.${s.format==='jpeg'?'jpg':s.format==='webp'?'webp':'png'}`;a.hidden=false;a.click();
     message(`Gambar ${s.format.toUpperCase()} sedia (${size.width} × ${size.height} px). Jika download tidak bermula, tekan pautan di bawah butang Download.`);
   }catch(e){error(e.message||'Eksport gagal. Cuba saiz 2048 px.');message('Eksport belum berjaya.');}finally{setBusy(false);}
 }
@@ -190,12 +204,167 @@ async function encodePhoto(img,s,key,mark) {
     render(canvas,img,s,key,{...size,logo:mark,brandLogo:brandLogos[s.brand],jpeg:s.format==='jpeg'});
     const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Eksport gagal. Cuba saiz 2048 px.')),`image/${s.format}`,.95));
     if(!blob.size)throw new Error('Hasil kosong. Cuba saiz 2048 px.');
+    if(s.format==='webp'&&blob.type!=='image/webp')throw new Error('Browser ini tidak menyokong eksport WebP. Pilih PNG atau JPEG.');
     return {blob,size};
   }finally{canvas.width=1;canvas.height=1;}
 }
 function discardBatchResult() {
   if(batchURL)URL.revokeObjectURL(batchURL);batchURL=null;$('batch-result').hidden=true;
 }
+
+function updateBatchFocusBar(){
+  const bar=$('batch-focus-bar');
+  const index=batchFocus?batchQueue.indexOf(batchFocus.item):-1;
+  if(index<0){bar.hidden=true;return;}
+  batchFocus.index=index;bar.hidden=false;
+  const topCount=document.querySelector('.studio-counter');if(topCount)topCount.textContent=`${index+1}/${batchQueue.length}`;
+  $('batch-focus-count').textContent=`${index+1} / ${batchQueue.length}`;
+  $('batch-focus-name').textContent=batchFocus.item.file.name;
+  $('batch-prev').disabled=busy||index===0;
+  $('batch-next').disabled=busy||index===batchQueue.length-1;
+  $('batch-exit').disabled=busy;
+}
+function closeBatchFocus(){
+  batchFocusRequest++;
+  if(batchFocus?.url)URL.revokeObjectURL(batchFocus.url);
+  if(batchFocus?.img)batchFocus.img.removeAttribute('src');
+  batchFocus=null;
+  const topCount=document.querySelector('.studio-counter');if(topCount)topCount.textContent='1/1';
+  $('batch-focus-bar').hidden=true;
+  update();discardExport();
+  for(const item of batchQueue)item.card?.classList.remove('selected');
+}
+async function getBatchMetadata(item){
+  if(!item.metadata)item.metadata=await readMetadata(item.file);
+  return item.metadata;
+}
+function smallCanvas(img,maxSide=560){
+  const w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+  if(w*h>96000000)throw new Error('Foto melebihi 96 megapiksel.');
+  const scale=Math.min(1,maxSide/Math.max(w,h));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.round(w*scale));
+  canvas.height=Math.max(1,Math.round(h*scale));
+  canvas.getContext('2d',{alpha:false}).drawImage(img,0,0,canvas.width,canvas.height);
+  return canvas;
+}
+function updateBatchThumbStatus(){
+  const done=batchQueue.filter(x=>x.previewImage).length;
+  const failed=batchQueue.filter(x=>x.previewError).length;
+  $('batch-preview-status').textContent=batchQueue.length
+    ?`${done} / ${batchQueue.length} preview tersedia${failed?' · '+failed+' tidak dapat dibuka':''}. Tekan gambar untuk lihat besar.`
+    :'Pilih banyak foto untuk preview semua dalam galeri.';
+}
+function paintBatchThumbnail(item){
+  if(!item.card)return;
+  const image=item.card.querySelector('canvas'),placeholder=item.card.querySelector('.batch-thumb-placeholder');
+  item.card.classList.toggle('selected',batchFocus?.item===item);
+  if(item.previewError){
+    image.hidden=true;placeholder.hidden=false;
+    placeholder.textContent='Preview gagal · '+item.previewError;
+    return;
+  }
+  if(!item.previewImage){
+    image.hidden=true;placeholder.hidden=false;placeholder.textContent='Memuat preview…';
+    return;
+  }
+  try{
+    const settings=effectiveBatchSettings(item);
+    render(image,item.previewImage,settings,template,{maxSide:360,logo,brandLogo:brandLogos[settings.brand]});
+    image.hidden=false;placeholder.hidden=true;
+  }catch{
+    image.hidden=true;placeholder.hidden=false;placeholder.textContent='Tidak dapat render preview';
+  }
+}
+function paintBatchThumbnails(){
+  for(const item of batchQueue)paintBatchThumbnail(item);
+  updateBatchThumbStatus();
+}
+function scheduleBatchThumbPaint(){
+  clearTimeout(thumbPaintTimer);
+  thumbPaintTimer=setTimeout(()=>{
+    paintBatchThumbnails();
+    if(batchFocus)renderPreview();
+  },180);
+}
+function drawBatchGallery(){
+  const gallery=$('batch-preview-gallery');
+  gallery.replaceChildren();
+  batchQueue.forEach((item,index)=>{
+    const card=document.createElement('button');card.type='button';card.className='batch-preview-card';
+    card.disabled=busy;
+    card.setAttribute('aria-label',`Preview ${index+1} daripada ${batchQueue.length}: ${item.file.name}`);
+    const media=document.createElement('span');media.className='batch-preview-media';
+    const canvas=document.createElement('canvas');canvas.hidden=true;canvas.setAttribute('aria-hidden','true');
+    const placeholder=document.createElement('span');placeholder.className='batch-thumb-placeholder';
+    media.append(canvas,placeholder);
+    const caption=document.createElement('span');caption.className='batch-preview-name';caption.textContent=item.file.name;
+    const no=document.createElement('span');no.className='batch-preview-index';no.textContent=`Gambar ${index+1}`;
+    card.append(media,caption,no);item.card=card;
+    card.addEventListener('click',()=>focusBatchPhoto(item));
+    gallery.append(card);paintBatchThumbnail(item);
+  });
+  updateBatchThumbStatus();
+}
+function ensureBatchThumbnails(){
+  if(thumbWorker)return;
+  thumbWorker=(async()=>{
+    while(true){
+      const item=batchQueue.find(i=>!i.previewImage&&!i.previewError&&!i.previewLoading);
+      if(!item)break;
+      item.previewLoading=true;
+      let loaded;
+      try{
+        loaded=await openPhoto(item.file);
+        const small=smallCanvas(loaded.img);
+        await getBatchMetadata(item);
+        if(batchQueue.includes(item)){
+          item.previewImage=small;paintBatchThumbnail(item);updateBatchThumbStatus();
+        }
+      }catch(err){
+        if(batchQueue.includes(item)){
+          item.previewError=String(err.message||'Format tidak disokong');
+          paintBatchThumbnail(item);updateBatchThumbStatus();
+        }
+      }finally{
+        if(loaded){URL.revokeObjectURL(loaded.url);loaded.img.removeAttribute('src');}
+        item.previewLoading=false;
+      }
+      await new Promise(resolve=>setTimeout(resolve,0));
+    }
+  })().finally(()=>{
+    thumbWorker=null;
+    if(batchQueue.some(i=>!i.previewImage&&!i.previewError&&!i.previewLoading))ensureBatchThumbnails();
+  });
+}
+async function focusBatchPhoto(item){
+  if(busy||!batchQueue.includes(item))return;
+  const request=++batchFocusRequest;
+  $('batch-preview-status').textContent='Membuka preview besar…';
+  let loaded;
+  try{
+    loaded=await openPhoto(item.file);
+    await getBatchMetadata(item);
+    if(request!==batchFocusRequest||!batchQueue.includes(item))return;
+    if(batchFocus?.url)URL.revokeObjectURL(batchFocus.url);
+    if(batchFocus?.img)batchFocus.img.removeAttribute('src');
+    batchFocus={item,img:loaded.img,url:loaded.url,index:batchQueue.indexOf(item)};
+    loaded=null;
+    comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';
+    updateBatchFocusBar();update();discardExport();paintBatchThumbnails();
+    if(document.body.classList.contains('sheet-open'))document.querySelector('.sheet-close')?.click();
+    message('Preview batch: tetapan editor terpakai pada semua foto apabila dieksport.');
+  }catch(e){
+    $('batch-preview-status').textContent='Preview besar gagal: '+String(e.message||'Fail tidak disokong');
+  }finally{
+    if(loaded){URL.revokeObjectURL(loaded.url);loaded.img.removeAttribute('src');}
+    updateBatchThumbStatus();
+  }
+}
+$('batch-prev').addEventListener('click',()=>{if(batchFocus&&batchFocus.index>0)focusBatchPhoto(batchQueue[batchFocus.index-1]);});
+$('batch-next').addEventListener('click',()=>{if(batchFocus&&batchFocus.index<batchQueue.length-1)focusBatchPhoto(batchQueue[batchFocus.index+1]);});
+$('batch-exit').addEventListener('click',closeBatchFocus);
+
 function drawBatchQueue() {
   $('batch-list').replaceChildren();
   batchQueue.forEach((item,index)=>{
@@ -203,12 +372,13 @@ function drawBatchQueue() {
     name.className='batch-filename';name.textContent=`${index+1}. ${item.file.name}`;
     state.className='batch-file-state';state.textContent=item.status||'Menunggu';item.state=state;
     remove.type='button';remove.className='batch-remove';remove.textContent='×';remove.setAttribute('aria-label',`Buang ${item.file.name} daripada batch`);remove.disabled=busy;
-    remove.addEventListener('click',()=>{if(busy)return;batchQueue.splice(index,1);discardBatchResult();drawBatchQueue();});
+    remove.addEventListener('click',()=>{if(busy)return;if(batchFocus?.item===item)closeBatchFocus();batchQueue.splice(index,1);discardBatchResult();drawBatchQueue();updateBatchFocusBar();update();});
     info.append(name,state);row.append(info,remove);$('batch-list').append(row);
   });
   const mb=batchQueue.reduce((sum,item)=>sum+item.file.size,0)/1024/1024;
   $('batch-count').textContent=batchQueue.length?`${batchQueue.length} / ${BATCH_LIMIT} foto · ${mb.toFixed(1)} MB`:'Belum ada foto dipilih.';
   $('batch-clear').disabled=busy||!batchQueue.length;$('batch-run').disabled=busy||!batchQueue.length;
+  drawBatchGallery();ensureBatchThumbnails();
 }
 function addBatchFiles(files) {
   if(busy)return;
@@ -226,14 +396,14 @@ function addBatchFiles(files) {
 }
 function openBatch() {
   if(busy)return;
-  $('batch-title').scrollIntoView({block:'start'});$('batch-input').click();
+  $('batch-input').click();
 }
 for(const id of ['batch-open','batch-select'])$(id).addEventListener('click',openBatch);
 $('batch-input').addEventListener('change',e=>{addBatchFiles(Array.from(e.target.files));e.target.value='';});
-$('batch-clear').addEventListener('click',()=>{if(busy)return;batchQueue=[];discardBatchResult();drawBatchQueue();$('batch-progress').hidden=true;$('batch-status').textContent='Senarai dikosongkan. Fail asal tidak terjejas.';});
+$('batch-clear').addEventListener('click',()=>{if(busy)return;closeBatchFocus();batchQueue=[];discardBatchResult();drawBatchQueue();$('batch-progress').hidden=true;$('batch-status').textContent='Senarai dikosongkan. Fail asal tidak terjejas.';});
 function syncBatchHelp(){ $('batch-mode-help').textContent=$('batch-metadata').value==='auto'?'Jika EXIF tiada, maklumat kamera dibiarkan kosong. Kapsyen dan logo sendiri ikut editor.':'Jenama, nama kamera dan tetapan kamera dalam editor digunakan untuk semua foto.'; }
 syncBatchHelp();
-$('batch-metadata').addEventListener('change',()=>{syncBatchHelp();queueSave();});
+$('batch-metadata').addEventListener('change',()=>{syncBatchHelp();queueSave();scheduleBatchThumbPaint();if(batchFocus)update();});
 $('batch-cancel').addEventListener('click',()=>{batchCancelled=true;$('batch-cancel').disabled=true;$('batch-status').textContent='Menghentikan selepas fail semasa…';});
 $('batch-run').addEventListener('click',async()=>{
   if(busy||!batchQueue.length)return;
@@ -246,11 +416,11 @@ $('batch-run').addEventListener('click',async()=>{
   try{
     for(let index=0;index<batchQueue.length;index++){
       if(batchCancelled)break;
-      const item=batchQueue[index];let url,img;
+      const item=batchQueue[index];let url,img,decoded;
       item.state.textContent='Memproses…';$('batch-status').textContent=`${index+1} / ${batchQueue.length}: ${item.file.name}`;
       await new Promise(resolve=>setTimeout(resolve,0));
       try{
-        url=URL.createObjectURL(item.file);img=await loadImage(url);
+        decoded=await openPhoto(item.file);url=decoded.url;img=decoded.img;
         if(img.naturalWidth*img.naturalHeight>96000000)throw new Error('Foto melebihi 96 megapiksel.');
         if(batchCancelled){item.status='Belum diproses';break;}
         const data=mode==='auto'?await readMetadata(item.file):null;
@@ -258,9 +428,9 @@ $('batch-run').addEventListener('click',async()=>{
         const {blob,size}=await encodePhoto(img,s,chosen,mark);
         if(bytes+blob.size>BATCH_OUTPUT_LIMIT){limited=true;throw new Error('Had hasil 150 MB dicapai. Kurangkan batch atau resolusi.');}
         entries.push({name:outputName(item.file.name,index,chosen,s.format),blob});bytes+=blob.size;completed++;
-        item.status=`Siap · ${size.width} × ${size.height}${mode==='auto'&&!data.found?' · tiada EXIF':''}`;
+        item.status=`Siap · ${size.width} × ${size.height}${decoded.source==='RAW preview'?' · RAW preview':''}${mode==='auto'&&!data.found?' · tiada EXIF':''}`;
       }catch(e){failed++;item.status=`Gagal: ${e.message}`;item.state.classList.add('failed');}
-      finally{if(url)URL.revokeObjectURL(url);if(img)img.src='';item.state.textContent=item.status;progress.value=index+1;}
+      finally{if(url)URL.revokeObjectURL(url);if(img)img.removeAttribute('src');item.state.textContent=item.status;progress.value=index+1;}
       if(limited)break;
     }
     $('batch-cancel').hidden=true;

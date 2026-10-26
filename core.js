@@ -2,7 +2,7 @@ export const STORAGE_KEY = 'framelabs.project.v1';
 export const TEMPLATE_NAMES = { soft: 'Soft Frame', overlay: 'On Photo', rounded: 'Rounded Blur', white: 'Gallery White' };
 export const DEFAULTS = Object.freeze({
   ratio: 'original', padding: 6.5, radius: 3, innerRadius: 0, blur: 20, darkness: 78,
-  frameColor: '#ffffff', textColor: '#ffffff', brand: 'IPHONE', camera: 'IPHONE',
+  frameColor: '#ffffff', frameVariant: 'original', textColor: '#ffffff', brand: 'IPHONE', camera: 'IPHONE',
   caption: '', focal: '75mm', aperture: 'f/2.0', shutter: '1/320s', iso: '200',
   showExif: true, showBrand: true, textSize: 100, format: 'png', resolution: 'original'
 });
@@ -13,7 +13,7 @@ export const STYLE_DEFAULTS = {
   white: { padding: 4, radius: 3, innerRadius: 0, blur: 20, darkness: 78, textColor: '#202020', frameColor: '#ffffff' }
 };
 const numericRanges = { padding: [2,14], radius: [0,8], innerRadius: [0,10], blur: [0,32], darkness: [35,95], textSize: [70,160] };
-const enums = { ratio: ['original','3:2','4:3','1:1','4:5','9:16'], brand: ['IPHONE','FUJIFILM','DJI','SONY','CANON','NIKON','LUMIX','LEICA','HASSELBLAD','CUSTOM'], format: ['png','jpeg'], resolution: ['original','2048','4096'] };
+const enums = { frameVariant: ['original','white','black','pastel','vibrant'], ratio: ['original','3:2','4:3','1:1','4:5','2:3','16:9','5:4','9:16'], brand: ['IPHONE','FUJIFILM','DJI','SONY','CANON','NIKON','LUMIX','LEICA','HASSELBLAD','XIAOMI','GOPRO','INSTA360','CUSTOM'], format: ['png','jpeg','webp'], resolution: ['original','2048','4096'] };
 export function sanitizeSettings(input) {
   const out = { ...DEFAULTS };
   if (!input || typeof input !== 'object') return out;
