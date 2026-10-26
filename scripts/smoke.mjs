@@ -29,7 +29,23 @@ try{
   });
   const files=samples.map((base64,i)=>({name:'foodfest-'+(i+1)+'.png',mimeType:'image/png',buffer:Buffer.from(base64,'base64')}));
   await page.locator('#photo-input').setInputFiles(files);
-  await page.waitForFunction(()=>!document.querySelector('#v3-selection').hidden);
+  try {
+    await page.waitForFunction(()=>!document.querySelector('#v3-selection')?.hidden,undefined,{timeout:4500});
+  } catch(e) {
+    console.error('SELECTION DEBUG',JSON.stringify(await page.evaluate(()=>({
+      ready:document.documentElement.dataset.ready,
+      hasV3:!!window.FrameLabsV3,
+      items:window.FrameLabsV3?.items?.length,
+      busy:window.FrameLabsV3?.busy,
+      selectionExists:!!document.querySelector('#v3-selection'),
+      selectionHidden:document.querySelector('#v3-selection')?.hidden,
+      choosing:document.body.classList.contains('v3-picking'),
+      status:document.querySelector('#batch-status')?.textContent,
+      error:document.querySelector('#error')?.textContent
+    }))));
+    console.error('PAGE ERRORS',JSON.stringify(errors));
+    throw e;
+  }
   assert.equal(await page.locator('.v3-selection-item').count(),7);
   assert.match(await page.locator('#v3-size').textContent(),/7\/30/);
   try{
