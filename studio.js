@@ -9,13 +9,9 @@ const icons={
 back:'<path d="m15 18-6-6 6-6"/>',
 upload:'<rect x="4" y="4" width="15" height="15" rx="2"/><path d="M9 9h11v11H9"/>',
 brand:'<circle cx="12" cy="12" r="9"/><path d="M9 16V8h4a2 2 0 0 1 0 4H9m4 0 3 4"/>',
-theme:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15 15 3M5 21 21 5"/>',
 params:'<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="#161617"/><circle cx="15" cy="17" r="3" fill="#161617"/>',
-height:'<path d="M8 3v18M16 3v18m-11-4 7 4 7-4M5 7l7-4 7 4"/>',
-margin:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/>',
 frame:'<rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1"/>',
 crop:'<path d="M5 3v14a2 2 0 0 0 2 2h14M3 5h14a2 2 0 0 1 2 2v14"/>',
-export:'<path d="M12 3v14m-5-5 5 5 5-5M4 17v4h16v-4"/>',
 batch:'<rect x="3" y="3" width="11" height="11" rx="1"/><rect x="10" y="10" width="11" height="11" rx="1"/>'
 };
 const svg=(name)=>'<svg aria-hidden="true" viewBox="0 0 24 24">'+icons[name]+'</svg>';
@@ -142,7 +138,6 @@ dock.querySelector('[data-action="home"]').addEventListener('click',()=>catalog.
 dock.querySelector('[data-action="camera"]').addEventListener('click',()=>$('photo-input').click());
 dock.querySelector('[data-action="editor"]').addEventListener('click',closeGallery);
 
-// Brand picker: text treatments deliberately avoid copying proprietary app logos.
 const frameSection=sections[0];
 const framePalette=document.createElement('div');framePalette.id='frame-palette';framePalette.className='frame-palette';
 framePalette.innerHTML='<p class="palette-label">Select Frame</p><div class="palette-list" role="group" aria-label="Gaya warna bingkai"></div>';

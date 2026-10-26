@@ -92,8 +92,8 @@ body.framelabs-v2{overflow:hidden}
 .framelabs-v2 .gallery-heading,.framelabs-v2 .template-list,.framelabs-v2 .template-panel .panel-heading{max-width:1050px;margin-left:auto;margin-right:auto}
 .framelabs-v2 .template-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
 .framelabs-v2 .preview-panel{padding:105px 80px 118px}
-.framelabs-v2 .canvas-wrap canvas{max-height:76dvh}
-.framelabs-v2 .studio-toolbar{left:50%;right:auto;transform:translateX(-50%);border:1px solid #393939;border-bottom:0;border-radius:24px 24px 0 0;max-width:min(95vw,800px);padding-left:12px;padding-right:12px}
+.framelabs-v2 .canvas-wrap canvas{max-height:100%}
+.framelabs-v2 .studio-toolbar{left:50%;right:auto;transform:translateX(-50%);border:1px solid #393939;border-bottom:0;border-radius:24px 24px 0 0;width:min(620px,95vw);padding-left:12px;padding-right:12px}
 .framelabs-v2 .inspector{left:50%;right:auto;transform:translate(-50%,105%);width:min(620px,95vw)}
 .framelabs-v2.sheet-open .inspector{transform:translate(-50%,0)}
 .framelabs-v2 .brand-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
