@@ -9,6 +9,7 @@ root.innerHTML=`
   <div class="v3-picker-top"><button type="button" id="v3-back" aria-label="Kembali">‹</button>
     <strong id="v3-heading">Recents</strong><button type="button" id="v3-cancel">Cancel</button></div>
   <p class="v3-picker-note">Foto yang kau pilih dari Photos atau Files. Tekan nombor, susun, dan semak sebelum edit.</p>
+  <div class="v3-picker-actions"><button type="button" id="v3-add-photos">+ Add Photos</button><span>JPG · HEIF · RAW preview</span></div>
   <div id="v3-selection-grid" class="v3-selection-grid" role="group" aria-label="Foto terpilih"></div>
   <div id="v3-selection-tray" class="v3-selection-tray" aria-label="Susunan foto"></div>
   <div class="v3-picker-footer"><button type="button" id="v3-peek">Preview</button>
@@ -31,11 +32,12 @@ const exportReport=document.createElement('div');exportReport.className='v3-expo
 document.querySelector('.export-section').append(exportReport);
 const exportControls=document.createElement('div');exportControls.className='v3-export-controls';exportControls.append($('batch-progress'),$('batch-cancel'),$('batch-result'));
 document.querySelector('.export-section').append(exportControls);
-let open=false,lastCommitted=[],lastSelection=0,selectedId=null,navigating=false,peek=false,returnFocus=null;
+let open=false,lastCommitted=[],selectedId=null,navigating=false,peek=false,returnFocus=null,returnToGallery=false;
 
 const available=()=>api.items;
 function show(){
  if(api.busy)return;
+ returnToGallery=document.body.classList.contains('gallery-open');
  open=true;peek=false;root.hidden=false;$('v3-peek-screen').hidden=true;
  document.body.classList.add('v3-picking');returnFocus=document.activeElement;
  document.querySelector('.studio-toolbar').inert=true;
@@ -116,20 +118,23 @@ async function previewSelected(){
 }
 async function finish(){
  const items=available();if(!items.length||api.busy)return;
- const index=Math.max(0,items.findIndex(x=>x.id===selectedId));
  $('v3-finish').disabled=true;
- await api.focus(items[index].id);
- if(api.activeId!==items[index].id){$('v3-finish').disabled=false;return;}
- lastCommitted=items.map(x=>x.id);
+ await api.focus(items[0].id);
+ if(api.activeId!==items[0].id){$('v3-finish').disabled=false;return;}
+ lastCommitted=[...items];selectedId=items[0].id;
  hide();
  if(document.body.classList.contains('gallery-open'))document.querySelector('[data-action=editor]')?.click();
  render();
 }
 function cancel(){
  if(!open)return;
- for(const item of available())if(!lastCommitted.includes(item.id))api.remove(item.id);
- hide();render();
+ const reopenGallery=returnToGallery&&lastCommitted.length===0;
+ api.restore(lastCommitted);
+ hide();
+ if(reopenGallery)document.querySelector('.studio-back')?.click();
+ render();
 }
+$('v3-add-photos').onclick=()=>$('photo-input').click();
 $('v3-peek').onclick=previewSelected;
 $('v3-peek-back').onclick=()=>{peek=false;$('v3-peek-screen').hidden=true;};
 $('v3-back').onclick=cancel;$('v3-cancel').onclick=cancel;$('v3-finish').onclick=finish;
