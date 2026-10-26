@@ -33,7 +33,7 @@ const exportReport=document.createElement('div');exportReport.className='v3-expo
 document.querySelector('.export-section').append(exportReport);
 const exportControls=document.createElement('div');exportControls.className='v3-export-controls';exportControls.append($('batch-progress'),$('batch-cancel'),$('batch-result'));
 document.querySelector('.export-section').append(exportControls);
-let open=false,lastCommitted=[],selectedId=null,navigating=false,peek=false,returnFocus=null,returnToGallery=false,activeAtReview=null;
+let open=false,lastCommitted=[],lastSelection=0,selectedId=null,navigating=false,peek=false,returnFocus=null,returnToGallery=false,activeAtReview=null;
 
 const available=()=>api.items;
 function show(){
