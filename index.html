@@ -90,7 +90,12 @@
         <p class="helper" id="batch-mode-help">Jika EXIF tiada, maklumat kamera dibiarkan kosong. Kapsyen dan logo sendiri ikut editor.</p>
         <div class="batch-actions"><button type="button" id="batch-select" class="button secondary">Pilih banyak foto</button><button type="button" id="batch-clear" class="text-button" disabled>Kosongkan senarai</button></div>
         <p id="batch-count" class="helper">Belum ada foto dipilih.</p>
-        <ol id="batch-list" class="batch-list" aria-label="Senarai foto batch"></ol>
+        <p class="helper batch-preview-tip">Preview setiap gambar menggunakan template dan tetapan semasa. Tekan gambar untuk lihat besar; fail asal tidak berubah.</p>
+        <div id="batch-preview-gallery" class="batch-preview-gallery" role="list" aria-label="Pratonton semua foto batch"></div>
+        <p id="batch-preview-status" class="helper" role="status" aria-live="polite">Pilih foto untuk menjana preview.</p>
+        <details class="batch-file-details"><summary>Lihat nama fail dan status pemprosesan</summary>
+          <ol id="batch-list" class="batch-list" aria-label="Senarai foto batch"></ol>
+        </details>
         <progress id="batch-progress" max="1" value="0" aria-label="Kemajuan batch" hidden></progress>
         <p id="batch-status" class="helper" role="status" aria-live="polite">Senarai batch hanya untuk sesi ini; tiada foto dihantar ke server.</p>
         <button type="button" id="batch-run" class="button primary full-width" disabled>Proses & download ZIP</button>
@@ -100,6 +105,12 @@
       <details class="storage-details"><summary>Simpanan & privasi</summary><p>Tetapan, logo dan salinan foto (maksimum 2048 px) disimpan dalam localStorage browser ini. Foto asal digunakan sehingga halaman ditutup. Selepas dibuka semula, eksport menggunakan salinan yang disimpan.</p><p>JPG, PNG, WebP, AVIF dan HEIC/HEIF boleh diimport. RAW menggunakan preview JPEG yang terkandung dalam fail, bukan data RAW sensor penuh. Untuk HEIF, decoder lokal disediakan jika browser tiada sokongan. GPS tidak dipaparkan atau dimasukkan dalam hasil eksport.</p><button type="button" id="clear-storage" class="text-button danger">Padam simpanan peranti</button></details>
     </aside>
   </main>
+  <nav id="batch-focus-bar" class="batch-focus-bar" aria-label="Navigasi preview batch" hidden>
+    <button id="batch-prev" type="button" aria-label="Gambar sebelumnya">‹</button>
+    <div class="batch-focus-detail"><b id="batch-focus-count">1 / 1</b><span id="batch-focus-name"></span></div>
+    <button id="batch-next" type="button" aria-label="Gambar seterusnya">›</button>
+    <button id="batch-exit" type="button" aria-label="Kembali kepada foto editor">Selesai</button>
+  </nav>
   <footer class="footer"><span>FRAMELABS <span class="footer-divider">/</span> Foto kau. Bingkai kau.</span><span>Diproses dalam browser · Tanpa login</span></footer>
   <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif,.hif,.arw,.cr2,.cr3,.nef,.nrw,.dng,.raf,.rw2,.orf,.pef,.srw,.3fr,.iiq,.erf,.raw" hidden>
   <input id="logo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden>
