@@ -18,7 +18,14 @@ try{
   await page.waitForFunction(()=>document.documentElement.dataset.ready==='true',{timeout:20000});
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),true,'gallery should open first');
   assert.equal(await page.locator('.template').count(),4);
+  await page.screenshot({path:'artifacts/v2-gallery.png',fullPage:true});
   await page.locator('[data-template="soft"]').click();
+  await page.screenshot({path:'artifacts/v2-editor.png',fullPage:true});
+  await page.locator('.studio-tool[data-tool="frame"]').click();
+  await page.locator('.palette-choice.pastel').click();
+  assert.equal(await page.locator('#frameVariant').inputValue(),'pastel');
+  await page.screenshot({path:'artifacts/v2-frame-sheet.png',fullPage:true});
+  await page.locator('.sheet-close').click();
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),false);
   await page.locator('.studio-tool[data-tool="brand"]').click();
   assert.equal(await page.locator('.inspector').getAttribute('data-tool'),'brand');
