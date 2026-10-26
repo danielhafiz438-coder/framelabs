@@ -115,3 +115,19 @@ body.framelabs-v2{overflow:hidden}
 .framelabs-v2 .sheet-close:focus-visible,.framelabs-v2 .studio-tool:focus-visible,.framelabs-v2 .brand-choice:focus-visible{outline:2px solid #86b3ff;outline-offset:3px}
 
 .framelabs-v2 .inspector[data-tool="export"] .storage-details{display:block}
+
+/* Compact brand selector and the reference-style frame swatches. */
+.framelabs-v2 .frame-palette{margin:6px 0 21px}
+.framelabs-v2 .palette-label{font-size:16px;font-weight:550;color:#fff;margin:9px 0 22px}
+.framelabs-v2 .palette-list{display:flex;gap:24px;align-items:center;overflow-x:auto;padding:6px 5px 13px;scrollbar-width:none}
+.framelabs-v2 .palette-choice{position:relative;flex:0 0 46px;width:46px;height:46px;border-radius:50%;border:2px solid #505055;background:#ddd;cursor:pointer}
+.framelabs-v2 .palette-choice.original{background:linear-gradient(145deg,#747474,#dadada)}
+.framelabs-v2 .palette-choice.white{background:#fff}
+.framelabs-v2 .palette-choice.black{background:#000}
+.framelabs-v2 .palette-choice.pastel{background:conic-gradient(#ffb2b7,#ffdf97,#aff5e8,#bcaffe,#ffb2b7)}
+.framelabs-v2 .palette-choice.vibrant{background:conic-gradient(#fc2d68,#ffa225,#25c3e5,#752df1,#fc2d68)}
+.framelabs-v2 .palette-choice.selected{outline:2px solid #e5e7f0;outline-offset:3px}
+.framelabs-v2 .brand-advanced{margin:5px 0 0;padding:12px 0;border-top:1px solid #39393d}
+.framelabs-v2 .brand-advanced summary{min-height:35px;color:#aeb0ba;font-size:12px;cursor:pointer;padding-top:8px}
+.framelabs-v2 .brand-advanced[open] summary{color:#fff}
+.framelabs-v2 #frameVariant[hidden]{display:none!important}
