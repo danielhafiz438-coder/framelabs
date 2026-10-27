@@ -72,8 +72,8 @@ function choose(id){
  selectedId=id;
  for(const node of root.querySelectorAll('.v3-pick-image,.v3-tray-item')){
   const selected=node.dataset.photoId===id;
+  node.setAttribute('aria-pressed',String(selected));
   if(node.classList.contains('v3-tray-item'))node.classList.toggle('selected',selected);
-  else node.setAttribute('aria-pressed',String(selected));
  }
 }
 function refreshLoadedThumbnail(id){
@@ -115,7 +115,7 @@ function render(){
   const filename=document.createElement('p');filename.textContent=item.file.name;filename.title=item.file.name;
   card.append(b,filename,tools);grid.append(card);
   const small=document.createElement('button');small.className='v3-tray-item';small.type='button';small.dataset.photoId=item.id;
-  small.setAttribute('aria-label','Lihat pilihan '+(index+1));
+  small.setAttribute('aria-label','Lihat pilihan '+(index+1));small.setAttribute('aria-pressed',String(selectedId===item.id));
   small.classList.toggle('selected',selectedId===item.id);drawThumb(small,item);
   const badge=document.createElement('b');badge.textContent=String(index+1);small.append(badge);
   small.onclick=()=>choose(item.id);tray.append(small);
@@ -132,7 +132,7 @@ async function previewSelected(){
   await api.ensure(item.id);
   if(!peek||!open)return;
   const source=item.previewImage;if(!source)throw Error(item.previewError||'Preview tidak tersedia');
-  const c=$('v3-peek-canvas');c.width=source.width;c.height=source.height;
+  const c=$('v3-peek-canvas');if(c.width!==source.width)c.width=source.width;if(c.height!==source.height)c.height=source.height;
   c.getContext('2d').drawImage(source,0,0);
   $('v3-peek-name').textContent=item.file.name;
  }catch(e){$('v3-peek-name').textContent=String(e.message||e);}
@@ -169,6 +169,8 @@ function refreshScope(){
  const scoped=api.scope==='individual';
  $('v3-global').classList.toggle('active',!scoped);
  $('v3-individual').classList.toggle('active',scoped);
+ $('v3-global').setAttribute('aria-pressed',String(!scoped));
+ $('v3-individual').setAttribute('aria-pressed',String(scoped));
  $('v3-clear-override').hidden=!scoped;
 }
 function syncExport(){
@@ -182,7 +184,15 @@ document.addEventListener('framelabs:selection',()=>{
  lastSelection=size;render();if(!open)show();
 });
 document.addEventListener('framelabs:preview-ready',e=>refreshLoadedThumbnail(e.detail.id));
-document.addEventListener('framelabs:focus',()=>{if(open)render();refreshScope();});
+document.addEventListener('framelabs:focus',()=>{
+ if(open)render();
+ refreshScope();
+ if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+  counter.classList.remove('v34-count-change');
+  void counter.offsetWidth;
+  counter.classList.add('v34-count-change');
+ }
+});
 document.addEventListener('framelabs:scope',refreshScope);
 document.addEventListener('framelabs:busy',syncExport);
 document.addEventListener('framelabs:export-complete',syncExport);

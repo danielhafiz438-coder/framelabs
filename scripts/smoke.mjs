@@ -86,6 +86,15 @@ try{
     return first===document.querySelector('.v3-selection-item');
   });
   assert.equal(incrementallyUpdated,true,'Thumbnail readiness must not rebuild the entire selection grid');
+  // Selection changes should update accessibility state without rebuilding photo DOM.
+  const firstPhotoNode=await page.locator('.v3-selection-item').first().evaluate(node=>{node.dataset.smokePreserved='yes';return true;});
+  await page.locator('.v3-selection-item').nth(3).locator('.v3-pick-image').click();
+  assert.equal(await page.locator('.v3-tray-item').nth(3).getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('.v3-tray-item').first().getAttribute('aria-pressed'),'false');
+  assert.equal(await page.locator('.v3-selection-item').first().getAttribute('data-smoke-preserved'),'yes');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  assert.equal(await page.locator('#v3-selection').evaluate(el=>getComputedStyle(el).animationName),'none','Reduced motion must turn off picker animation');
+  await page.emulateMedia({reducedMotion:'no-preference'});
   await page.screenshot({path:'artifacts/v3-selection.png'});
   await page.locator('.v3-selection-item').nth(6).locator('.v3-order-tools button').first().click();
   assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name).slice(-2)),['foodfest-7.png','foodfest-6.png']);
@@ -108,6 +117,17 @@ try{
   });
   await page.waitForFunction(()=>window.FrameLabsV3.activeIndex===1,{timeout:10000});
   assert.equal(await page.locator('.studio-counter').textContent(),'2/7');
+  assert.equal(await page.locator('.studio-counter').evaluate(el=>el.classList.contains('v34-count-change')),true,'Counter gives a navigation cue');
+  // The sheet is modal over preview but toolbar remains accessible; outside tap closes.
+  await page.locator('.studio-tool[data-tool="frame"]').click();
+  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('sheet-open')),true);
+  assert.equal(await page.locator('.studio-tool[data-tool="frame"]').getAttribute('aria-expanded'),'true');
+  assert.equal(await page.locator('.sheet-backdrop').evaluate(el=>getComputedStyle(el).pointerEvents),'auto','Backdrop should receive outside taps');
+  await page.locator('.studio-tool[data-tool="theme"]').click();
+  assert.equal(await page.locator('#settings-sheet').getAttribute('data-tool'),'theme');
+  assert.equal(await page.locator('.studio-tool[data-tool="frame"]').getAttribute('aria-expanded'),'false');
+  await page.locator('.sheet-backdrop').click({position:{x:10,y:105}});
+  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('sheet-open')),false,'Backdrop closes the sheet');
   await page.locator('.studio-tool[data-tool="text"]').click();
   await page.locator('#v3-individual').click();
   await page.locator('#caption').fill('Special food shot');
