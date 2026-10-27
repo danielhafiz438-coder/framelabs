@@ -1,15 +1,16 @@
-import { STORAGE_KEY, TEMPLATE_NAMES, DEFAULTS, STYLE_DEFAULTS, freshStyles, sanitizeSettings, parseProject, saveProject, layoutFor, exportSize, metadataSettings } from './core.js';
+import { TEMPLATE_NAMES, DEFAULTS, STYLE_DEFAULTS, freshStyles, sanitizeSettings, layoutFor, exportSize, metadataSettings } from './core.js';
 import { render } from './renderer.js';
 import { createProjectStore } from './project-storage.js';
 import { createZipResponsive } from './zip-client.js';
 import { openPhoto } from './image-io.js';
 import { selectionEntry, moveEntry, settingsForPhoto } from './selection.js';
 import { previewSize, idleTurn, createIdlePainter } from './preview.js';
-import { BATCH_LIMIT, BATCH_INPUT_LIMIT, BATCH_OUTPUT_LIMIT, validatePhotoFile, batchSettings, outputName } from './batch.js';
+import { BATCH_LIMIT, BATCH_INPUT_LIMIT, BATCH_OUTPUT_LIMIT, validatePhotoFile, outputName } from './batch.js';
 
 const $ = id => document.getElementById(id);
 const form=$('settings'), preview=$('preview');
-const projectStore=createProjectStore(localStorage);
+const browserStorage=(()=>{try{return localStorage;}catch{return {getItem(){return null;},setItem(){throw new Error('No storage');},removeItem(){}};}})();
+const projectStore=createProjectStore(browserStorage);
 let saved=null;
 try {saved=projectStore.restore();} catch { /* Private browsing can deny storage; the editor still works in memory. */ }
 let template=saved?.template||'soft', styles=saved?.styles||freshStyles();
