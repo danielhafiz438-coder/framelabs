@@ -20,7 +20,12 @@ export async function createZipResponsive(entries,{onProgress=()=>{},signal}={})
       else if(data.type==='error')finish(new Error(data.error));
       else if(data.type==='done')finish(null,data.blob);
     };
-    worker.onerror=()=>finish(new Error('Worker ZIP gagal.'));
+    worker.onerror=()=>{
+      // Safari/CSP may reject module Workers after construction; fall back safely.
+      if(signal?.aborted){finish(new Error('Eksport dibatalkan.'));return;}
+      worker.terminate();
+      createZip(entries,onProgress).then(blob=>finish(null,blob),error=>finish(error));
+    };
     try{worker.postMessage({entries});}catch(e){finish(e);}
   });
 }
