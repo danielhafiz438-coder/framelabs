@@ -68,6 +68,25 @@ function drawThumb(target,item){
   target.append(pending);
  }
 }
+function choose(id){
+ selectedId=id;
+ for(const node of root.querySelectorAll('.v3-pick-image,.v3-tray-item')){
+  const selected=node.dataset.photoId===id;
+  if(node.classList.contains('v3-tray-item'))node.classList.toggle('selected',selected);
+  else node.setAttribute('aria-pressed',String(selected));
+ }
+}
+function refreshLoadedThumbnail(id){
+ if(!open)return;
+ const item=available().find(photo=>photo.id===id);
+ if(!item)return;
+ for(const node of root.querySelectorAll('.v3-pick-image,.v3-tray-item')){
+  if(node.dataset.photoId!==id)continue;
+  const badge=node.querySelector(node.classList.contains('v3-tray-item')?'b':'.v3-order');
+  drawThumb(node,item);
+  if(badge)node.append(badge);
+ }
+}
 function render(){
  const items=available();if(!items.some(x=>x.id===selectedId))selectedId=items[0]?.id||null;
  scopeRow.hidden=items.length<2;
@@ -78,11 +97,12 @@ function render(){
  items.forEach((item,index)=>{
   const card=document.createElement('article');card.className='v3-selection-item';card.dataset.photoId=item.id;
   const b=document.createElement('button');b.type='button';b.className='v3-pick-image';
+  b.dataset.photoId=item.id;
   b.setAttribute('aria-label',`Pilih foto ${index+1}: ${item.file.name}`);
   b.setAttribute('aria-pressed',String(item.id===selectedId));
   drawThumb(b,item);
   const number=document.createElement('span');number.className='v3-order';number.textContent=String(index+1);b.append(number);
-  b.onclick=()=>{selectedId=item.id;render();};
+  b.onclick=()=>choose(item.id);
   const tools=document.createElement('div');tools.className='v3-order-tools';
   for(const [label,dir] of [['←',-1],['→',1]]){
    const action=document.createElement('button');action.type='button';action.textContent=label;
@@ -94,11 +114,11 @@ function render(){
   remove.onclick=()=>api.remove(item.id);tools.append(remove);
   const filename=document.createElement('p');filename.textContent=item.file.name;filename.title=item.file.name;
   card.append(b,filename,tools);grid.append(card);
-  const small=document.createElement('button');small.className='v3-tray-item';small.type='button';
+  const small=document.createElement('button');small.className='v3-tray-item';small.type='button';small.dataset.photoId=item.id;
   small.setAttribute('aria-label','Lihat pilihan '+(index+1));
   small.classList.toggle('selected',selectedId===item.id);drawThumb(small,item);
   const badge=document.createElement('b');badge.textContent=String(index+1);small.append(badge);
-  small.onclick=()=>{selectedId=item.id;render();};tray.append(small);
+  small.onclick=()=>choose(item.id);tray.append(small);
  });
  pill.hidden=items.length<2;
  pill.textContent=`✓ Batch ${items.length}`;
@@ -161,8 +181,8 @@ document.addEventListener('framelabs:selection',()=>{
  if(size>lastSelection)selectedId=available()[lastSelection]?.id||selectedId;
  lastSelection=size;render();if(!open)show();
 });
-document.addEventListener('framelabs:preview-ready',()=>{if(open)render();});
-document.addEventListener('framelabs:focus',()=>{render();refreshScope();});
+document.addEventListener('framelabs:preview-ready',e=>refreshLoadedThumbnail(e.detail.id));
+document.addEventListener('framelabs:focus',()=>{if(open)render();refreshScope();});
 document.addEventListener('framelabs:scope',refreshScope);
 document.addEventListener('framelabs:busy',syncExport);
 document.addEventListener('framelabs:export-complete',syncExport);

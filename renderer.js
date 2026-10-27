@@ -82,7 +82,8 @@ export function render(canvas,img,settings,template,options={}) {
   const l=layoutFor(iw,ih,s,template), maxSide=options.maxSide||1400;
   let width=options.width, height=options.height;
   if(!width||!height) { const k=maxSide/Math.max(l.width,l.height);width=Math.round(l.width*k);height=Math.round(l.height*k); }
-  canvas.width=width;canvas.height=height;
+  if(canvas.width!==width)canvas.width=width;
+  if(canvas.height!==height)canvas.height=height;
   const ctx=canvas.getContext('2d');ctx.clearRect(0,0,width,height);
   if(options.jpeg) {ctx.fillStyle='#000000';ctx.fillRect(0,0,width,height);}
   ctx.save();ctx.scale(width/l.width,height/l.height);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
