@@ -115,3 +115,97 @@ body.v3-picking{overflow:hidden}
  .framelabs-v2 .gallery-dock button{transition:none}
  .framelabs-v2:not(.gallery-open):not(.v3-picking) .preview-panel{animation:none}
 }
+
+
+/* v3.4 — lightweight micro-interactions (transform and opacity, no layout animation). */
+.framelabs-v2 .studio-tool{
+  position:relative;
+  -webkit-tap-highlight-color:transparent;
+  transition:color .18s ease,background-color .18s ease,transform .16s cubic-bezier(.2,.7,.2,1);
+}
+.framelabs-v2 .studio-tool::after{
+  content:"";position:absolute;left:36%;right:36%;bottom:2px;height:2px;
+  border-radius:99px;background:#82b5ff;opacity:0;transform:scaleX(.35);
+  transition:opacity .18s ease,transform .2s cubic-bezier(.2,.8,.2,1);
+}
+.framelabs-v2 .studio-tool.active::after{opacity:1;transform:scaleX(1)}
+.framelabs-v2 .studio-tool:active:not(:disabled){transform:scale(.94)}
+.framelabs-v2 .studio-tool.active{background:#262d3b;color:#a7caff}
+
+/* The close-outside-sheet handler already exists in studio.js; expose its backdrop. */
+.framelabs-v2 .sheet-backdrop{
+  display:block;opacity:0;visibility:hidden;pointer-events:none;
+  background:rgba(0,0,0,.30);backdrop-filter:blur(2px);
+  transition:opacity .2s ease,visibility .2s ease;
+}
+.framelabs-v2.sheet-open:not(.gallery-open) .sheet-backdrop{
+  display:block;opacity:1;visibility:visible;pointer-events:auto;
+}
+.framelabs-v2 .inspector{transition:transform .25s cubic-bezier(.22,1,.36,1),visibility .25s}
+.framelabs-v2 .inspector.v34-switching .settings-section:not([hidden]),
+.framelabs-v2 .inspector.v34-switching .export-section:not([hidden]),
+.framelabs-v2 .inspector.v34-switching .v3-scope:not([hidden]){
+  animation:v34-sheet-content .18s ease both;
+}
+@keyframes v34-sheet-content{from{opacity:.55;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.framelabs-v2 .gallery-filter,
+.framelabs-v2 .template canvas,
+.framelabs-v2 .palette-choice,
+.framelabs-v2 .brand-choice,
+.framelabs-v2 .brand-tab,
+.framelabs-v2 .v3-scope button,
+.framelabs-v2 .gallery-dock button{
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .16s ease,box-shadow .18s ease,outline-offset .18s ease,
+    background-color .18s ease,border-color .18s ease,color .18s ease;
+}
+.framelabs-v2 .gallery-filter:active,
+.framelabs-v2 .palette-choice:active:not(:disabled),
+.framelabs-v2 .brand-choice:active:not(:disabled),
+.framelabs-v2 .brand-tab:active:not(:disabled),
+.framelabs-v2 .v3-scope button:active:not(:disabled){transform:scale(.95)}
+.framelabs-v2 .template:active:not(:disabled) canvas{transform:scale(.975)}
+.framelabs-v2 .template.selected canvas{box-shadow:0 0 0 3px #2164d433}
+.framelabs-v2 .palette-choice.selected{outline-offset:4px;box-shadow:0 0 0 3px #ffffff14}
+.framelabs-v2 .brand-choice.selected{box-shadow:0 2px 14px #2164d42e}
+.framelabs-v2 .v3-scope button.active{box-shadow:0 2px 8px #1169f526}
+@media(hover:hover){
+  .framelabs-v2 .template:hover canvas{transform:translateY(-2px)}
+  .framelabs-v2 .studio-tool:hover:not(.active):not(:disabled){background:#ffffff0b}
+  .framelabs-v2 .gallery-filter:hover:not(.active){border-color:#94b7f8}
+}
+
+/* Selection review: direct visual feedback without rebuilding or re-decoding photos. */
+.v3-selection:not([hidden]){animation:v34-picker-enter .23s cubic-bezier(.22,1,.36,1) both}
+.v3-peek-screen:not([hidden]){animation:v34-picker-enter .18s ease both}
+@keyframes v34-picker-enter{from{opacity:.7;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media(min-width:700px){
+  .v3-selection:not([hidden]){animation:v34-picker-desktop .22s ease-out both}
+  @keyframes v34-picker-desktop{from{opacity:.7;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+}
+.v3-pick-image,.v3-tray-item,.v3-order-tools button,.v3-picker-footer button{
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .16s ease,border-color .18s ease,box-shadow .18s ease,outline-color .18s ease;
+}
+.v3-pick-image:active,.v3-tray-item:active,.v3-order-tools button:active:not(:disabled),
+.v3-picker-footer button:active:not(:disabled){transform:scale(.96)}
+.v3-pick-image[aria-pressed=true]{box-shadow:inset 0 0 0 2px #4386ff}
+.v3-tray-item.selected{box-shadow:0 0 0 2px #4b8efe44}
+.framelabs-v2 .studio-counter.v34-count-change{animation:v34-counter .2s ease-out}
+@keyframes v34-counter{
+  0%{opacity:.6;transform:translateX(-50%) scale(.91)}
+  100%{opacity:1;transform:translateX(-50%) scale(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  .framelabs-v2 .studio-tool,.framelabs-v2 .sheet-backdrop,.framelabs-v2 .inspector,
+  .framelabs-v2 .gallery-filter,.framelabs-v2 .template canvas,.framelabs-v2 .palette-choice,
+  .framelabs-v2 .brand-choice,.framelabs-v2 .brand-tab,.framelabs-v2 .v3-scope button,
+  .framelabs-v2 .gallery-dock button,.v3-pick-image,.v3-tray-item,.v3-order-tools button,
+  .v3-picker-footer button{transition:none!important}
+  .v3-selection:not([hidden]),.v3-peek-screen:not([hidden]),
+  .framelabs-v2 .studio-counter.v34-count-change,
+  .framelabs-v2 .inspector.v34-switching .settings-section:not([hidden]),
+  .framelabs-v2 .inspector.v34-switching .export-section:not([hidden]),
+  .framelabs-v2 .inspector.v34-switching .v3-scope:not([hidden]){animation:none!important}
+}
