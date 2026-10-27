@@ -397,7 +397,7 @@ async function getBatchPreview(item){
     if(!batchQueue.includes(item))throw new Error('Foto telah dikeluarkan daripada batch.');
     const loaded=await openPhoto(item.file);
     try{
-      const small=smallCanvas(loaded.img,640);
+      const small=smallCanvas(loaded.img,512);
       await getBatchMetadata(item);
       item.sourceWidth=loaded.img.naturalWidth;item.sourceHeight=loaded.img.naturalHeight;
       item.previewImage=small;
