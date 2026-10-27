@@ -70,6 +70,7 @@ function drawThumb(target,item){
 }
 function render(){
  const items=available();if(!items.some(x=>x.id===selectedId))selectedId=items[0]?.id||null;
+ scopeRow.hidden=items.length<2;
  $('v3-size').textContent=`Original · ${(selectionBytes(items)/1048576).toFixed(1)} MB · ${items.length}/30`;
  $('v3-finish').disabled=!items.length||api.busy;
  $('v3-peek').disabled=!items.length;
