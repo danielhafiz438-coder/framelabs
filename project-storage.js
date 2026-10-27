@@ -9,13 +9,12 @@ export function createProjectStore(storage){
       const saved=parseProject(storage.getItem(STORAGE_KEY));
       if(!saved)return null;
       lastPhoto=storage.getItem(photoKey);lastLogo=storage.getItem(logoKey);
-      if(lastPhoto!==null)saved.photo=lastPhoto;
-      if(lastLogo!==null)saved.logo=lastLogo;
+      const safeImage=(text,max)=>typeof text==='string'&&text.length<=max&&/^data:image\/(?:jpeg|png|webp);base64,[a-zA-Z0-9+/=]+$/.test(text);
+      if(lastPhoto!==null)saved.photo=safeImage(lastPhoto,2300000)?lastPhoto:null;
+      if(lastLogo!==null)saved.logo=safeImage(lastLogo,650000)?lastLogo:null;
       return saved;
     },
     save(project){
-      try{storage.setItem(STORAGE_KEY,JSON.stringify({...project,photo:null,logo:null}));}
-      catch{return 'unavailable';}
       let assetsSaved=true;
       for(const [key,value,old,remember] of [
         [photoKey,project.photo,lastPhoto,v=>{lastPhoto=v;}],
@@ -27,6 +26,8 @@ export function createProjectStore(storage){
           remember(value);
         }catch{assetsSaved=false;}
       }
+      try{storage.setItem(STORAGE_KEY,JSON.stringify({...project,photo:null,logo:null}));}
+      catch{return 'unavailable';}
       return assetsSaved?'full':'settings';
     },
     clear(){
