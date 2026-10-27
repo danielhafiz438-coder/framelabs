@@ -96,6 +96,10 @@ function openTool(tool){
  if(body.classList.contains('sheet-open')&&inspector.dataset.tool===tool){closeSheet();return;}
  returnFocus=document.activeElement;
  setFields(tool);body.classList.add('sheet-open');
+ inspector.classList.remove('v34-switching');
+ // Restart only the small sheet-content animation, without recreating controls.
+ void inspector.offsetWidth;
+ inspector.classList.add('v34-switching');
  toolbar.querySelectorAll('.studio-tool').forEach(b=>{
   const active=b.dataset.tool===tool;b.classList.toggle('active',active);b.setAttribute('aria-expanded',String(active));
  });
@@ -103,7 +107,7 @@ function openTool(tool){
  syncSurfaces();close.focus();refreshPalette();
 }
 function closeSheet(){
- body.classList.remove('sheet-open');
+ body.classList.remove('sheet-open');inspector.classList.remove('v34-switching');
  toolbar.querySelectorAll('.studio-tool').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-expanded','false');});
  syncSurfaces();
  if(returnFocus?.isConnected&&!returnFocus.disabled)returnFocus.focus();
@@ -207,7 +211,7 @@ document.querySelectorAll('[data-template]').forEach(b=>b.addEventListener('clic
 refreshPalette();
 
 const brandField=sections[1],brandSelect=$('brand');
-const brandTabs=document.createElement('div');brandTabs.className='brand-tabs';
+const brandTabs=document.createElement('div');brandTabs.className='brand-tabs';brandTabs.setAttribute('role','tablist');brandTabs.setAttribute('aria-label','Kategori jenama');
 const brandGrid=document.createElement('div');brandGrid.className='brand-grid';
 brandField.insertBefore(brandGrid,brandField.children[1]);
 brandField.insertBefore(brandTabs,brandGrid);
@@ -216,7 +220,10 @@ const brandGroups=[
  ['Action Camera',['DJI','GOPRO','INSTA360']],['Film',['FUJIFILM','LEICA']]
 ];
 function renderBrandGroup(group){
- brandTabs.querySelectorAll('.brand-tab').forEach(tab=>tab.classList.toggle('active',tab.dataset.group===group));
+ brandTabs.querySelectorAll('.brand-tab').forEach(tab=>{
+  const selected=tab.dataset.group===group;
+  tab.classList.toggle('active',selected);tab.setAttribute('aria-selected',String(selected));
+ });
  brandGrid.replaceChildren();
  const items=brandGroups.find(([name])=>name===group)?.[1]||[];
  const buttons=['HIDE',...items].filter(v=>v==='HIDE'||[...brandSelect.options].some(opt=>opt.value===v));
@@ -236,7 +243,7 @@ function renderBrandGroup(group){
  }
 }
 for(const [group] of brandGroups){
- const b=document.createElement('button');b.type='button';b.className='brand-tab';b.dataset.group=group;b.textContent=group;
+ const b=document.createElement('button');b.type='button';b.className='brand-tab';b.dataset.group=group;b.textContent=group;b.setAttribute('role','tab');
  b.addEventListener('click',()=>renderBrandGroup(group));brandTabs.append(b);
 }
 renderBrandGroup('Phone');
