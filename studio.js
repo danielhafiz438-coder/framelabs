@@ -128,7 +128,7 @@ document.addEventListener('keydown',e=>{
  if(body.classList.contains('sheet-open'))closeSheet();
  else if(body.classList.contains('gallery-open'))closeGallery();
 });
-$('photo-input').addEventListener('change',e=>{if(e.target.files?.length)closeGallery();});
+$('photo-input').addEventListener('change',e=>{if(e.target.files?.length&&!body.classList.contains('v3-picking'))closeGallery();});
 catalog.querySelectorAll('[data-template]').forEach(button=>button.addEventListener('click',()=>{if(globalThis.FrameLabsV3?.items.length)closeGallery();}));
 
 const gallery=document.createElement('div');gallery.className='gallery-heading';
