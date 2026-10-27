@@ -79,6 +79,13 @@ try{
     }))));
     throw e;
   }
+  const incrementallyUpdated=await page.evaluate(()=>{
+    const first=document.querySelector('.v3-selection-item');
+    const firstID=window.FrameLabsV3.items[0].id;
+    document.dispatchEvent(new CustomEvent('framelabs:preview-ready',{detail:{id:firstID}}));
+    return first===document.querySelector('.v3-selection-item');
+  });
+  assert.equal(incrementallyUpdated,true,'Thumbnail readiness must not rebuild the entire selection grid');
   await page.screenshot({path:'artifacts/v3-selection.png'});
   await page.locator('.v3-selection-item').nth(6).locator('.v3-order-tools button').first().click();
   assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name).slice(-2)),['foodfest-7.png','foodfest-6.png']);
@@ -137,6 +144,23 @@ try{
   const zip=await zipPromise;
   assert.ok(zip.suggestedFilename().endsWith('.zip'));
   await page.screenshot({path:'artifacts/v3-export.png'});
+  const rawWorker=await page.evaluate(async()=>{
+    const c=document.createElement('canvas');c.width=512;c.height=512;
+    const ctx=c.getContext('2d');
+    for(let y=0;y<512;y++){ctx.fillStyle='hsl('+y+',70%,'+(30+y%45)+'%)';ctx.fillRect(0,y,512,1);}
+    const data=c.toDataURL('image/jpeg',.97).split(',')[1];
+    const binary=atob(data);const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<bytes.length;i++)bytes[i]=binary.charCodeAt(i);
+    const file=new File([new Uint8Array(10),bytes,new Uint8Array(40)],'synthetic.ARW');
+    const {scanEmbeddedJpeg,openPhoto}=await import('./image-io.js');
+    const embedded=await scanEmbeddedJpeg(file),decoded=await openPhoto(file);
+    const result={embedded,source:decoded.source,width:decoded.img.naturalWidth};
+    URL.revokeObjectURL(decoded.url);decoded.img.removeAttribute('src');
+    return result;
+  });
+  assert.ok(rawWorker.embedded?.length>4096);
+  assert.equal(rawWorker.source,'RAW preview');
+  assert.equal(rawWorker.width,512);
   assert.deepEqual(errors,[]);
   console.log('PASS v3.1 gallery dock, Editor import, seven-photo selection, swipe, overrides and ZIP');
 }finally{
