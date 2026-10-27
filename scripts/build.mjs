@@ -1,7 +1,7 @@
 import { mkdir, cp, access, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 const root=fileURLToPath(new URL('../',import.meta.url)), dist=new URL('../dist/',import.meta.url);
-const files=['index.html','style.css','studio.css','unified.css','app.js','studio.js','unified.js','gesture.js','selection.js','image-io.js','raw-scan.worker.js','zip.worker.js','zip-client.js','preview.js','core.js','renderer.js','batch.js','.nojekyll','assets','vendor'];
+const files=['index.html','style.css','studio.css','unified.css','app.js','studio.js','unified.js','gesture.js','selection.js','image-io.js','raw-scan.worker.js','zip.worker.js','zip-client.js','project-storage.js','preview.js','core.js','renderer.js','batch.js','.nojekyll','assets','vendor'];
 await mkdir(dist,{recursive:true});
 for(const name of files){await access(new URL(`../${name}`,import.meta.url));await cp(new URL(`../${name}`,import.meta.url),new URL(name,dist),{recursive:true});}
 await cp(new URL('../node_modules/heic-to/dist/csp/',import.meta.url),new URL('../dist/vendor/heic-to/csp/',import.meta.url),{recursive:true});
