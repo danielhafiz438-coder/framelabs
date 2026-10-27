@@ -1,18 +1,21 @@
 import { STORAGE_KEY, TEMPLATE_NAMES, DEFAULTS, STYLE_DEFAULTS, freshStyles, sanitizeSettings, parseProject, saveProject, layoutFor, exportSize, metadataSettings } from './core.js';
 import { render } from './renderer.js';
+import { createProjectStore } from './project-storage.js';
+import { createZipResponsive } from './zip-client.js';
 import { openPhoto } from './image-io.js';
 import { selectionEntry, moveEntry, settingsForPhoto } from './selection.js';
 import { previewSize, idleTurn, createIdlePainter } from './preview.js';
-import { BATCH_LIMIT, BATCH_INPUT_LIMIT, BATCH_OUTPUT_LIMIT, validatePhotoFile, batchSettings, outputName, createZip } from './batch.js';
+import { BATCH_LIMIT, BATCH_INPUT_LIMIT, BATCH_OUTPUT_LIMIT, validatePhotoFile, batchSettings, outputName } from './batch.js';
 
 const $ = id => document.getElementById(id);
 const form=$('settings'), preview=$('preview');
+const projectStore=createProjectStore(localStorage);
 let saved=null;
-try {saved=parseProject(localStorage.getItem(STORAGE_KEY));} catch { /* Private browsing can deny storage; the editor still works in memory. */ }
+try {saved=projectStore.restore();} catch { /* Private browsing can deny storage; the editor still works in memory. */ }
 let template=saved?.template||'soft', styles=saved?.styles||freshStyles();
 let photo=null, logo=null, photoData=saved?.photo||null, logoData=saved?.logo||null;
 let photoName=saved?.photoName||'Foto contoh · Sebastien Gabriel', isDemo=!photoData, exifFound=saved?.exifFound||false;
-let comparing=false, busy=false, importing=false, saveTimer, frame=0, exportURL=null, restored=Boolean(photoData);
+let comparing=false, busy=false, importing=false, saveTimer, frame=0, exportURL=null, restored=Boolean(photoData), heavyPreviewTimer=0,zipAbortController=null;
 const brandLogos={};
 let batchQueue=[], batchURL=null, batchCancelled=false, nextSelectionId=1, editScope='global', globalMetadataOverrides={};
 let batchFocus=null, batchFocusRequest=0, thumbWorker=null, thumbPaintTimer=0;
@@ -64,7 +67,7 @@ function compactPhoto(img) {
 function persist() {
   clearTimeout(saveTimer);saveTimer=null;
   const project={version:1,template,styles,photo:photoData,logo:logoData,photoName,exifFound,batchMode:$('batch-metadata').value};
-  let state='unavailable';try{state=saveProject(localStorage,project);}catch{}
+  let state='unavailable';try{state=projectStore.save(project);}catch{}
   if(state==='full')$('save-state').textContent=isDemo?'Tetapan disimpan pada peranti':photoData?'Tetapan & salinan foto disimpan':'Tetapan sahaja disimpan';
   else if(state==='settings'){$('save-state').textContent='Foto tidak disimpan: storan penuh';message('Tetapan disimpan, tetapi ruang browser tidak cukup untuk foto. Download hasil sebelum menutup halaman.');}
   else {$('save-state').textContent='Storan tidak tersedia · sesi sahaja';message('Browser tidak membenarkan simpanan. Editor dan download masih berfungsi dalam sesi ini.');}
@@ -178,9 +181,13 @@ form.addEventListener('input',e=>{
   }
   const out=$(`${key}-value`);if(out)out.value=key==='textSize'||key==='darkness'?`${value}%`:key==='blur'?String(value):`${value}%`;
   comparing=false;$('compare').setAttribute('aria-pressed','false');$('compare').textContent='Lihat asal';
-  update(true);queueSave();discardExport();scheduleBatchThumbPaint();
+  if(key==='blur'){
+    clearTimeout(heavyPreviewTimer);heavyPreviewTimer=setTimeout(()=>update(true),65);
+  }else update(true);
+  queueSave();discardExport();scheduleBatchThumbPaint();
   document.dispatchEvent(new Event('framelabs:edited'));
 });
+form.addEventListener('change',e=>{if(e.target.name==='blur'){clearTimeout(heavyPreviewTimer);update(true);}});
 for(const button of document.querySelectorAll('[data-template]'))button.addEventListener('click',()=>selectTemplate(button.dataset.template));
 for(const id of ['upload-top','upload-main'])$(id).addEventListener('click',()=>$('photo-input').click());
 $('upload-logo').addEventListener('click',()=>$('logo-input').click());
@@ -464,7 +471,7 @@ $('batch-clear').addEventListener('click',()=>{if(busy)return;closeBatchFocus();
 function syncBatchHelp(){ $('batch-mode-help').textContent=$('batch-metadata').value==='auto'?'Jika EXIF tiada, maklumat kamera dibiarkan kosong. Kapsyen dan logo sendiri ikut editor.':'Jenama, nama kamera dan tetapan kamera dalam editor digunakan untuk semua foto.'; }
 syncBatchHelp();
 $('batch-metadata').addEventListener('change',()=>{syncBatchHelp();queueSave();scheduleBatchThumbPaint();if(batchFocus){syncForm();update();}});
-$('batch-cancel').addEventListener('click',()=>{batchCancelled=true;$('batch-cancel').disabled=true;$('batch-status').textContent='Menghentikan selepas fail semasa…';});
+$('batch-cancel').addEventListener('click',()=>{batchCancelled=true;zipAbortController?.abort();$('batch-cancel').disabled=true;$('batch-status').textContent='Menghentikan selepas fail semasa…';});
 $('batch-run').addEventListener('click',async()=>{
   if(busy||!batchQueue.length)return;
   const settings={...style()},chosen=template,mark=logo,mode=$('batch-metadata').value,entries=[];
@@ -495,19 +502,24 @@ $('batch-run').addEventListener('click',async()=>{
       finally{if(url)URL.revokeObjectURL(url);if(img)img.removeAttribute('src');item.state.textContent=item.status;progress.value=index+1;}
       if(limited)break;
     }
-    $('batch-cancel').hidden=true;
     const pending=batchQueue.length-completed-failed;
     const summary=`${completed} siap, ${failed} gagal, ${pending} belum diproses.`;
     if(!entries.length){$('batch-status').textContent=`${batchCancelled?'Batch dihentikan. ':''}${summary} Tiada ZIP dihasilkan.`;return;}
     $('batch-status').textContent=`${summary} Menyediakan ZIP…`;
     const report=[`FRAMELABS · ${TEMPLATE_NAMES[chosen]}`,`Metadata: ${mode}`,summary,...batchQueue.map(item=>`${item.file.name.replace(/[\r\n]/g,' ')}: ${item.status}`)].join('\n');
     entries.push({name:'batch-report.txt',blob:new Blob([report],{type:'text/plain;charset=utf-8'})});
-    const archive=await createZip(entries);batchURL=URL.createObjectURL(archive);
+    zipAbortController=new AbortController();
+    const archive=await createZipResponsive(entries,{
+      signal:zipAbortController.signal,
+      onProgress:(done,total)=>{$('batch-status').textContent=`Menyediakan ZIP · ${done}/${total} fail…`;}
+    });
+    if(batchCancelled)throw new Error('Eksport dibatalkan.');
+    batchURL=URL.createObjectURL(archive);
     const link=$('batch-result');link.href=batchURL;link.download=`framelabs-${chosen}-batch-${Date.now()}.zip`;link.textContent=`Download ZIP · ${completed} foto (${(archive.size/1024/1024).toFixed(1)} MB)`;link.hidden=false;
     $('batch-status').textContent=`${batchCancelled?'Batch dihentikan. ':''}${summary} ZIP mengandungi hasil yang berjaya dan laporan. Jika download tidak bermula, tekan pautan di bawah.`;
     if(!batchCancelled)link.click();
   }catch(e){$('batch-status').textContent=`ZIP tidak dapat disediakan: ${e.message} Cuba resolusi 2048 px atau batch lebih kecil.`;}
-  finally{setBusy(false);$('batch-cancel').hidden=true;}
+  finally{zipAbortController=null;setBusy(false);$('batch-cancel').hidden=true;}
 });
 let dragDepth=0;
 document.addEventListener('dragenter',e=>{if(!e.dataTransfer?.types.includes('Files'))return;e.preventDefault();dragDepth++;$('drop-zone').classList.add('dragging');});
@@ -518,7 +530,7 @@ $('clear-storage').addEventListener('click',()=>$('clear-dialog').showModal());
 $('cancel-clear').addEventListener('click',()=>$('clear-dialog').close());
 $('confirm-clear').addEventListener('click',async()=>{
   clearTimeout(saveTimer);saveTimer=null;error('');
-  try{localStorage.removeItem(STORAGE_KEY);}catch{error('Browser tidak membenarkan simpanan dipadam.');return;}
+  try{projectStore.clear();}catch{error('Browser tidak membenarkan simpanan dipadam.');return;}
   $('clear-dialog').close();setBusy(true);styles=freshStyles();template='soft';logo=null;logoData=null;
   try{await useDemo(false);$('save-state').textContent='Simpanan peranti dipadam';message('Simpanan FRAMELABS dipadam. Fail asal dalam peranti tidak terjejas.');}catch{error('Foto contoh tidak dapat dimuatkan. Muat semula halaman.');}finally{setBusy(false);}
 });
