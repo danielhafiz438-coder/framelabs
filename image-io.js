@@ -29,10 +29,46 @@ export function findEmbeddedJpeg(bytes){
   }
   return best;
 }
+// Yield between blocks when Workers are unavailable (older/iOS restricted contexts).
+export async function scanPreviewCooperatively(bytes,step=1048576){
+  let best=null,start=-1;
+  for(let i=0;i+2<bytes.length;i++){
+    if(i>0 && i%step===0)await new Promise(resolve=>setTimeout(resolve,0));
+    if(bytes[i]!==255)continue;
+    if(start<0 && bytes[i+1]===216 && bytes[i+2]===255){
+      if([224,225,226,227,232,219,192,193,194,196,221,254].includes(bytes[i+3])){
+        start=i;i+=2;
+      }
+    }else if(start>=0 && bytes[i+1]===217){
+      const end=i+2,length=end-start;
+      if(length>4096 && (!best||length>best.length))best={start,end,length};
+      start=-1;i++;
+    }
+  }
+  return best;
+}
+export async function scanEmbeddedJpeg(file){
+  if(typeof Worker!=='undefined'){
+    let worker;
+    try{
+      worker=new Worker(new URL('./raw-scan.worker.js',import.meta.url),{type:'module'});
+      const buffer=await file.arrayBuffer();
+      const result=await new Promise((resolve,reject)=>{
+        const timeout=setTimeout(()=>reject(new Error('RAW preview worker timed out')),30000);
+        worker.onmessage=({data})=>{clearTimeout(timeout);if(data.error)reject(new Error(data.error));else resolve(data.result);};
+        worker.onerror=()=>{clearTimeout(timeout);reject(new Error('RAW worker unavailable'));};
+        worker.postMessage({buffer},[buffer]);
+      });
+      return result;
+    }catch{
+      // CSP restrictions or Worker failures: retain compatibility without long blocking loops.
+    }finally{worker?.terminate();}
+  }
+  return scanPreviewCooperatively(new Uint8Array(await file.arrayBuffer()));
+}
 export async function openPhoto(file){
   if(RAW_EXTENSIONS.test(file.name)){
-    const bytes=new Uint8Array(await file.arrayBuffer());
-    const jpeg=findEmbeddedJpeg(bytes);
+    const jpeg=await scanEmbeddedJpeg(file);
     if(!jpeg)throw new Error('Fail RAW ini tiada preview JPEG yang dapat dibaca. Eksport JPEG daripada kamera dahulu.');
     const blob=file.slice(jpeg.start,jpeg.end,'image/jpeg');
     try{
