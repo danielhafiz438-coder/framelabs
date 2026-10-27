@@ -28,7 +28,7 @@ export function crc32(bytes) {
 }
 
 // PNG/JPEG are already compressed; ZIP STORE avoids a second compression pass on mobile.
-export async function createZip(entries) {
+export async function createZip(entries,onProgress=()=>{}) {
   if (!entries.length || entries.length > BATCH_LIMIT + 1) throw new Error('Bilangan fail ZIP tidak sah.');
   const parts = [], central = [], names = new Set(), encoder = new TextEncoder();
   let offset = 0, centralSize = 0, total = 0;
@@ -48,6 +48,7 @@ export async function createZip(entries) {
     c.setUint16(14, 33, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
     c.setUint16(28, name.length, true); c.setUint32(42, offset, true); record.set(name, 46);
     parts.push(header, entry.blob); central.push(record); offset += header.length + data.length; centralSize += record.length;
+    onProgress(central.length,entries.length);
     await new Promise(resolve => setTimeout(resolve, 0));
   }
   const end = new Uint8Array(22), e = new DataView(end.buffer);
