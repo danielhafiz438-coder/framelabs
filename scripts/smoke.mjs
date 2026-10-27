@@ -36,10 +36,18 @@ try{
     return result;
   });
   const files=samples.map((base64,i)=>({name:'foodfest-'+(i+1)+'.png',mimeType:'image/png',buffer:Buffer.from(base64,'base64')}));
+  const firstPickerPromise=page.waitForEvent('filechooser');
+  await page.locator('[data-action="editor"]').click();
+  const firstPicker=await firstPickerPromise;
+  assert.equal(firstPicker.isMultiple(),true,'Editor should open multi-photo import');
+  await firstPicker.setFiles([files[0]]);
+  await page.waitForFunction(()=>!document.querySelector('#v3-selection').hidden);
+  await page.locator('#v3-cancel').click();
+  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),true,'Cancel returns to gallery');
+  assert.equal(await page.evaluate(()=>window.FrameLabsV3.items.length),0);
   const fileChooserPromise=page.waitForEvent('filechooser');
   await page.locator('[data-action="editor"]').click();
   const fileChooser=await fileChooserPromise;
-  assert.equal(fileChooser.isMultiple(),true,'Editor should open photo import before a photo exists');
   await fileChooser.setFiles(files);
   try {
     await page.waitForFunction(()=>!document.querySelector('#v3-selection')?.hidden,undefined,{timeout:4500});
