@@ -19,6 +19,14 @@ try{
   await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
   assert.equal(await page.locator('.template').count(),4);
   assert.equal(await page.locator('.studio-tool').count(),7);
+  assert.equal(await page.locator('[data-action="home"]').getAttribute('aria-current'),'page');
+  assert.equal(await page.locator('.v3-scope').evaluate(el=>el.hidden),true,'demo must not offer irrelevant individual controls');
+  await page.locator('[data-filter="classic"]').click();
+  assert.equal(await page.locator('[data-template="soft"]').isVisible(),false);
+  await page.locator('[data-action="home"]').click();
+  assert.equal(await page.locator('[data-template="soft"]').isVisible(),true,'Gallery should reset template filters');
+  assert.equal(await page.locator('[data-filter="all"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('.dock-feedback').isVisible(),true);
   const samples=await page.evaluate(()=>{
     const result=[];for(let i=0;i<7;i++){
       const c=document.createElement('canvas');c.width=i===0?1800:420;c.height=i===0?1200:280;
@@ -28,7 +36,19 @@ try{
     return result;
   });
   const files=samples.map((base64,i)=>({name:'foodfest-'+(i+1)+'.png',mimeType:'image/png',buffer:Buffer.from(base64,'base64')}));
-  await page.locator('#photo-input').setInputFiles(files);
+  const firstPickerPromise=page.waitForEvent('filechooser');
+  await page.locator('[data-action="editor"]').click();
+  const firstPicker=await firstPickerPromise;
+  assert.equal(firstPicker.isMultiple(),true,'Editor should open multi-photo import');
+  await firstPicker.setFiles([files[0]]);
+  await page.waitForFunction(()=>!document.querySelector('#v3-selection').hidden);
+  await page.locator('#v3-cancel').click();
+  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),true,'Cancel returns to gallery');
+  assert.equal(await page.evaluate(()=>window.FrameLabsV3.items.length),0);
+  const fileChooserPromise=page.waitForEvent('filechooser');
+  await page.locator('[data-action="editor"]').click();
+  const fileChooser=await fileChooserPromise;
+  await fileChooser.setFiles(files);
   try {
     await page.waitForFunction(()=>!document.querySelector('#v3-selection')?.hidden,undefined,{timeout:4500});
   } catch(e) {
@@ -64,6 +84,12 @@ try{
   assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name).slice(-2)),['foodfest-7.png','foodfest-6.png']);
   await page.locator('#v3-finish').click();
   await page.waitForFunction(()=>document.querySelector('#v3-selection').hidden&&window.FrameLabsV3.activeIndex>=0,{timeout:30000});
+  assert.equal(await page.locator('.studio-counter').textContent(),'1/7');
+  assert.equal(await page.locator('.v3-scope').evaluate(el=>el.hidden),false,'real batch shows edit scope');
+  await page.locator('.studio-back').click();
+  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),true);
+  await page.locator('[data-action="editor"]').click();
+  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),false,'Editor restores existing selection');
   assert.equal(await page.locator('.studio-counter').textContent(),'1/7');
   await page.screenshot({path:'artifacts/v3-editor.png'});
   const wrap=page.locator('#drop-zone');
@@ -111,7 +137,7 @@ try{
   assert.ok(zip.suggestedFilename().endsWith('.zip'));
   await page.screenshot({path:'artifacts/v3-export.png'});
   assert.deepEqual(errors,[]);
-  console.log('PASS v3 seven-photo selection, reorder, finish, swipe, individual override, single export and batch ZIP');
+  console.log('PASS v3.1 gallery dock, Editor import, seven-photo selection, swipe, overrides and ZIP');
 }finally{
   await page.close();await browser.close();server.kill('SIGTERM');
 }
