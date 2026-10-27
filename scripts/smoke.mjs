@@ -26,7 +26,7 @@ try{
   await page.locator('[data-action="home"]').click();
   assert.equal(await page.locator('[data-template="soft"]').isVisible(),true,'Gallery should reset template filters');
   assert.equal(await page.locator('[data-filter="all"]').getAttribute('aria-pressed'),'true');
-  assert.equal(await page.locator('.dock-feedback').isVisible(),true);
+  assert.equal(await page.locator('.dock-feedback').count(),0,'No floating instructional bubble in gallery');
   const samples=await page.evaluate(()=>{
     const result=[];for(let i=0;i<7;i++){
       const c=document.createElement('canvas');c.width=i===0?1800:420;c.height=i===0?1200:280;
@@ -85,6 +85,7 @@ try{
   await page.locator('#v3-finish').click();
   await page.waitForFunction(()=>document.querySelector('#v3-selection').hidden&&window.FrameLabsV3.activeIndex>=0,{timeout:30000});
   assert.equal(await page.locator('.studio-counter').textContent(),'1/7');
+  assert.equal(await page.locator('#status').isVisible(),false,'No floating preview batch messages');
   assert.equal(await page.locator('.v3-scope').evaluate(el=>el.hidden),false,'real batch shows edit scope');
   await page.locator('.studio-back').click();
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),true);

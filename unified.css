@@ -108,23 +108,10 @@ body.v3-picking{overflow:hidden}
 }
 .framelabs-v2 .gallery-dock button:active{transform:scale(.94);filter:brightness(1.13)}
 .framelabs-v2 .gallery-dock button:focus-visible{outline:2px solid #93beff;outline-offset:-3px}
-.framelabs-v2 .gallery-dock .dock-feedback{
-  position:absolute;
-  left:50%;bottom:calc(100% + 12px);transform:translateX(-50%);
-  width:max-content;max-width:min(320px,88vw);margin:0;
-  padding:9px 14px;border-radius:14px;
-  color:#f7faff;background:#282a30;border:1px solid #686b74;
-  box-shadow:0 8px 24px #000a;
-  font-size:12px;text-align:center;
-  pointer-events:none;animation:v31-dock-message .2s ease both;
-}
-.framelabs-v2 .gallery-dock .dock-feedback[hidden],
 .framelabs-v2 .v3-scope[hidden]{display:none!important}
 .framelabs-v2:not(.gallery-open):not(.v3-picking) .preview-panel{animation:v31-editor-enter .24s ease-out both}
-@keyframes v31-dock-message{from{opacity:0;transform:translate(-50%,7px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes v31-editor-enter{from{opacity:.5;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){
  .framelabs-v2 .gallery-dock button{transition:none}
- .framelabs-v2 .gallery-dock .dock-feedback,
  .framelabs-v2:not(.gallery-open):not(.v3-picking) .preview-panel{animation:none}
 }

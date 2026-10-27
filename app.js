@@ -13,7 +13,6 @@ let template=saved?.template||'soft', styles=saved?.styles||freshStyles();
 let photo=null, logo=null, photoData=saved?.photo||null, logoData=saved?.logo||null;
 let photoName=saved?.photoName||'Foto contoh · Sebastien Gabriel', isDemo=!photoData, exifFound=saved?.exifFound||false;
 let comparing=false, busy=false, importing=false, saveTimer, frame=0, exportURL=null, restored=Boolean(photoData);
-let noticeTimer;
 const brandLogos={};
 let batchQueue=[], batchURL=null, batchCancelled=false, nextSelectionId=1, editScope='global', globalMetadataOverrides={};
 let batchFocus=null, batchFocusRequest=0, thumbWorker=null, thumbPaintTimer=0;
@@ -24,7 +23,7 @@ const batchPainter=createIdlePainter(item=>{if(!busy&&batchQueue.includes(item))
 $('batch-metadata').value=saved?.batchMode||'auto';
 const sharedKeys=new Set(['brand','camera','caption','focal','aperture','shutter','iso','showExif','showBrand']);
 const style=()=>styles[template];
-function message(text) {$('status').textContent=text;$('status').hidden=false;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>{$('status').hidden=true;},8000);}
+function message(text) { const status=$('status');status.textContent=text;status.hidden=true; } // Non-critical messages stay out of the photo workspace.
 function error(text) {$('error').textContent=text;$('error').hidden=!text;}
 function setBusy(value) {
   busy=value;

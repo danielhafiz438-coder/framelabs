@@ -147,22 +147,14 @@ catalog.append(galleryNote);
 const dock=document.createElement('nav');dock.className='gallery-dock';
 dock.setAttribute('aria-label','Navigasi galeri');
 dock.innerHTML='<button type="button" data-action="home" aria-label="Galeri template" aria-current="page">'+svg('frame')+'<span>Galeri</span></button><button type="button" class="dock-primary" data-action="camera">'+svg('upload')+'<span>Pilih foto</span></button><button type="button" data-action="editor">'+svg('params')+'<span>Editor</span></button>';
-const dockNotice=document.createElement('p');dockNotice.className='dock-feedback';dockNotice.setAttribute('role','status');dockNotice.hidden=true;
-dock.append(dockNotice);catalog.append(dock);
-let dockNoticeTimer;
-function showDockNotice(message){
- dockNotice.textContent=message;dockNotice.hidden=false;
- clearTimeout(dockNoticeTimer);dockNoticeTimer=setTimeout(()=>dockNotice.hidden=true,1800);
-}
+catalog.append(dock);
 dock.querySelector('[data-action="home"]').addEventListener('click',()=>{
  gallery.querySelector('[data-filter="all"]').click();
  catalog.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
- showDockNotice('Semua template dipaparkan');
 });
 dock.querySelector('[data-action="camera"]').addEventListener('click',()=>$('photo-input').click());
 dock.querySelector('[data-action="editor"]').addEventListener('click',()=>{
  if(globalThis.FrameLabsV3?.items.length){closeGallery();return;}
- showDockNotice('Pilih foto dahulu untuk masuk editor');
  $('photo-input').click();
 });
 
