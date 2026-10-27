@@ -1,6 +1,6 @@
 {
   "name": "framelabs",
-  "version": "3.0.0",
+  "version": "3.3.0",
   "private": true,
   "type": "module",
   "description": "Local-first photo framing studio with mobile UI, HEIF conversion and RAW embedded previews",
@@ -8,7 +8,7 @@
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check studio.js && node --check unified.js && node --check gesture.js && node --check selection.js && node --check image-io.js && node --check preview.js && node --check app.js && node --check core.js && node --check renderer.js && node --check batch.js && node --test tests/*.test.mjs"
+    "check": "node --check studio.js && node --check unified.js && node --check gesture.js && node --check selection.js && node --check raw-scan.worker.js && node --check zip.worker.js && node --check zip-client.js && node --check project-storage.js && node --check image-io.js && node --check preview.js && node --check app.js && node --check core.js && node --check renderer.js && node --check batch.js && node --test tests/*.test.mjs"
   },
   "engines": {
     "node": ">=20"
