@@ -20,9 +20,14 @@ function roundedPath(ctx,x,y,w,h,r,begin=true) {
   ctx.lineTo(x+w,y+h-v); ctx.quadraticCurveTo(x+w,y+h,x+w-v,y+h); ctx.lineTo(x+v,y+h);
   ctx.quadraticCurveTo(x,y+h,x,y+h-v); ctx.lineTo(x,y+v); ctx.quadraticCurveTo(x,y,x+v,y); ctx.closePath();
 }
-function cover(ctx,img,x,y,w,h) {
-  const r = cropRect(img.naturalWidth || img.width, img.naturalHeight || img.height, w/h);
-  ctx.drawImage(img,r.x,r.y,r.width,r.height,x,y,w,h);
+function cover(ctx,img,x,y,w,h,settings) {
+  const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;
+  const base=cropRect(iw,ih,w/h), zoom=Math.max(1,Math.min(3,(settings?.cropZoom||100)/100));
+  const sw=base.width/zoom,sh=base.height/zoom;
+  const fx=Math.max(0,Math.min(1,(settings?.cropX??50)/100));
+  const fy=Math.max(0,Math.min(1,(settings?.cropY??50)/100));
+  const sx=(iw-sw)*fx,sy=(ih-sh)*fy;
+  ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
 }
 // A small separable blur keeps exported backgrounds consistent on Safari, including versions without Canvas filter.
 function boxBlur(data,w,h,radius) {
@@ -97,7 +102,7 @@ export function render(canvas,img,settings,template,options={}) {
       ctx.fillStyle=s.frameColor;ctx.fillRect(0,0,l.width,l.height);
     }else ctx.drawImage(blurred(img,l.width/l.height,s.blur),0,0,l.width,l.height);
   }
-  ctx.save();roundedPath(ctx,l.pad,l.pad,l.photoW,l.photoH,s.innerRadius*10);ctx.clip();cover(ctx,img,l.pad,l.pad,l.photoW,l.photoH);ctx.restore();
+  ctx.save();roundedPath(ctx,l.pad,l.pad,l.photoW,l.photoH,s.innerRadius*10);ctx.clip();cover(ctx,img,l.pad,l.pad,l.photoW,l.photoH,s);ctx.restore();
   if(template==='overlay'||(template!=='white'&&(!s.frameVariant||s.frameVariant==='original'))) {
     const start=template==='overlay' ? l.height*.55 : l.pad+l.photoH*.65;
     const gradient=ctx.createLinearGradient(0,start,0,l.height);gradient.addColorStop(0,'rgba(0,0,0,0)');gradient.addColorStop(1,`rgba(0,0,0,${s.darkness/100})`);

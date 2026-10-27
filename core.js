@@ -1,10 +1,10 @@
 export const STORAGE_KEY = 'framelabs.project.v1';
 export const TEMPLATE_NAMES = { soft: 'Soft Frame', overlay: 'On Photo', rounded: 'Rounded Blur', white: 'Gallery White' };
 export const DEFAULTS = Object.freeze({
-  ratio: 'original', padding: 6.5, radius: 3, innerRadius: 0, blur: 20, darkness: 78,
+  ratio: 'original', cropX:50, cropY:50, cropZoom:100, padding: 6.5, radius: 3, innerRadius: 0, blur: 20, darkness: 78,
   frameColor: '#ffffff', frameVariant: 'original', textColor: '#ffffff', brand: 'IPHONE', camera: 'IPHONE',
   caption: '', focal: '75mm', aperture: 'f/2.0', shutter: '1/320s', iso: '200',
-  showExif: true, showBrand: true, textSize: 100, format: 'png', resolution: 'original'
+  showExif: true, showBrand: true, textSize: 100, format: 'png', quality:95, resolution: 'original'
 });
 export const STYLE_DEFAULTS = {
   soft: { padding: 6.5, radius: 3, innerRadius: 0, blur: 20, darkness: 78, textColor: '#ffffff' },
@@ -12,7 +12,7 @@ export const STYLE_DEFAULTS = {
   rounded: { padding: 6, radius: 3, innerRadius: 6, blur: 24, darkness: 88, textColor: '#ffffff' },
   white: { padding: 4, radius: 3, innerRadius: 0, blur: 20, darkness: 78, textColor: '#202020', frameColor: '#ffffff' }
 };
-const numericRanges = { padding: [2,14], radius: [0,8], innerRadius: [0,10], blur: [0,32], darkness: [35,95], textSize: [70,160] };
+const numericRanges = { cropX:[0,100],cropY:[0,100],cropZoom:[100,300],quality:[50,100], padding: [2,14], radius: [0,8], innerRadius: [0,10], blur: [0,32], darkness: [35,95], textSize: [70,160] };
 const enums = { frameVariant: ['original','white','black','pastel','vibrant'], ratio: ['original','3:2','4:3','1:1','4:5','2:3','16:9','5:4','9:16'], brand: ['IPHONE','FUJIFILM','DJI','SONY','CANON','NIKON','LUMIX','LEICA','HASSELBLAD','XIAOMI','GOPRO','INSTA360','CUSTOM'], format: ['png','jpeg','webp'], resolution: ['original','2048','4096'] };
 export function sanitizeSettings(input) {
   const out = { ...DEFAULTS };

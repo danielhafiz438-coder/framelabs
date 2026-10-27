@@ -10,9 +10,11 @@
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./studio.css">
+  <link rel="stylesheet" href="./unified.css">
   <script src="./vendor/exifr-7.1.3.js" defer></script>
   <script src="./app.js" type="module"></script>
   <script src="./studio.js" type="module"></script>
+  <script src="./unified.js" type="module"></script>
 </head>
 <body>
   <a class="skip-link" href="#editor">Terus ke editor</a>
@@ -77,6 +79,7 @@
         </fieldset>
         <fieldset class="settings-section export-section"><legend>Simpan hasil</legend>
           <div class="field-grid"><div><label class="field-label" for="format">Format</label><select id="format" name="format"><option value="png">PNG</option><option value="jpeg">JPEG</option><option value="webp">WebP</option></select></div><div><label class="field-label" for="resolution">Sisi terpanjang</label><select id="resolution" name="resolution"><option value="original">Ikut foto</option><option value="2048">2048 px</option><option value="4096">4096 px</option></select></div></div>
+          <div class="range-field"><label for="quality">Kualiti JPEG / WebP <output for="quality" id="quality-value">95%</output></label><input id="quality" name="quality" type="range" min="50" max="100" step="1" value="95"></div>
           <p class="helper">PNG/WebP boleh kekalkan sudut lutsinar. JPEG gunakan latar hitam. Eksport maksimum 4096 px.</p>
           <button id="download" type="button" class="button primary full-width">Download gambar</button>
           <a id="export-link" class="export-link" hidden>Simpan / buka hasil sekali lagi</a>
@@ -112,7 +115,7 @@
     <button id="batch-exit" type="button" aria-label="Kembali kepada foto editor">Selesai</button>
   </nav>
   <footer class="footer"><span>FRAMELABS <span class="footer-divider">/</span> Foto kau. Bingkai kau.</span><span>Diproses dalam browser · Tanpa login</span></footer>
-  <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif,.hif,.arw,.cr2,.cr3,.nef,.nrw,.dng,.raf,.rw2,.orf,.pef,.srw,.3fr,.iiq,.erf,.raw" hidden>
+  <input id="photo-input" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif,.hif,.arw,.cr2,.cr3,.nef,.nrw,.dng,.raf,.rw2,.orf,.pef,.srw,.3fr,.iiq,.erf,.raw" hidden>
   <input id="logo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden>
   <input id="batch-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif,.hif,.arw,.cr2,.cr3,.nef,.nrw,.dng,.raf,.rw2,.orf,.pef,.srw,.3fr,.iiq,.erf,.raw" multiple hidden>
   <dialog id="clear-dialog"><h2>Padam simpanan peranti?</h2><p>Tetapan, salinan foto dan logo FRAMELABS dalam browser ini akan dipadam. Fail asal dalam peranti tidak terjejas.</p><div class="dialog-actions"><button class="button secondary" id="cancel-clear">Batal</button><button class="button primary" id="confirm-clear">Padam simpanan</button></div></dialog>

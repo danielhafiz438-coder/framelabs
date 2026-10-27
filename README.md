@@ -2,6 +2,16 @@
 
 Mobile-first framing editor with a fullscreen image studio, gallery-first template browser, floating controls and bottom-sheet settings. Includes four templates: Soft Frame, On Photo, Rounded Blur, Gallery White. No accounts, backend, analytics or runtime CDNs. Designed for GitHub Pages, including repository subpaths.
 
+## FrameLabs v3: Unified Photo Studio
+
+The workflow is now **template gallery → native multi-file picker → in-app selection review → unified editor → export**. The in-app selection review shows numbered imported thumbnails, an ordered tray, move-left/right controls, photo removal, image preview, selected count and original file sizes. The browser cannot browse iOS Recents without the system picker; only explicitly chosen local files appear in the review.
+
+Both one-photo and multi-photo editing use the same preview and bottom toolbar. The top counter shows current/total, and horizontal swipe or arrow keys navigate photos. Use **✓ Batch** to manage the selected list. Choose **Semua foto** to apply edits globally or **Foto ini** to create a resettable photo-specific override (including text, EXIF and crop zoom/position). All images use the existing render engine, EXIF logic and local decoder.
+
+**Export gambar** saves the active item from its full decoded source; **Export semua foto (ZIP)** processes all selected original inputs sequentially, applies the individual overrides, and produces a numbered ZIP with a report. RAW editing still relies on embedded JPEG previews, not full RAW demosaicing. Edits and batch photos remain local to this tab; the browser does not receive unattended access to the Photos library. Batch selections are not persisted across reload.
+
+**Release:** development in `feat/unified-photo-studio-v3` via Pull Request #3; verify browser/mobile tests before merging to `main`.
+
 ## Run
 
 Node.js 20+; npm install is required once to bundle the on-device HEIC/HEIF decoder.

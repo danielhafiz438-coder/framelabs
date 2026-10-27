@@ -21,6 +21,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: framelabs-v2-mobile-preview
-          path: artifacts/v2-*.png
+          name: framelabs-v3-mobile-preview
+          path: artifacts/v3-*.png
           if-no-files-found: ignore
