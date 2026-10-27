@@ -412,8 +412,8 @@ function drawBatchQueue() {
     remove.addEventListener('click',()=>{if(busy)return;if(batchFocus?.item===item)closeBatchFocus();batchQueue.splice(index,1);discardBatchResult();drawBatchQueue();updateBatchFocusBar();update();});
     info.append(name,state);row.append(info,remove);$('batch-list').append(row);
   });
-  const mb=batchQueue.reduce((sum,item)=>sum+item.file.size,0)/1024/1024;
-  $('batch-count').textContent=batchQueue.length?`${batchQueue.length} / ${BATCH_LIMIT} foto · ${mb.toFixed(1)} MB`:'Belum ada foto dipilih.';
+  const bytes=batchQueue.reduce((sum,item)=>sum+item.file.size,0),size=bytes>=1024**3?`${(bytes/1024**3).toFixed(2)} GB`:`${(bytes/1024**2).toFixed(1)} MB`;
+  $('batch-count').textContent=batchQueue.length?`${batchQueue.length} / ${BATCH_LIMIT} foto · ${size}`:'Belum ada foto dipilih.';
   $('batch-clear').disabled=busy||!batchQueue.length;$('batch-run').disabled=busy||!batchQueue.length;
   drawBatchGallery();ensureBatchThumbnails();
 }
@@ -424,7 +424,7 @@ function addBatchFiles(files) {
     try{
       validatePhotoFile(file);
       if(batchQueue.some(item=>item.file.name===file.name&&item.file.size===file.size&&item.file.lastModified===file.lastModified))continue;
-      if(batchQueue.length>=BATCH_LIMIT||total+file.size>BATCH_INPUT_LIMIT)throw new Error('Had 30 foto / 300 MB dicapai.');
+      if(batchQueue.length>=BATCH_LIMIT||total+file.size>BATCH_INPUT_LIMIT)throw new Error('Had 1,000 foto / 100 GB dicapai.');
       batchQueue.push({file,status:'Menunggu'});total+=file.size;
     }catch(e){rejected.push(`${file.name}: ${e.message}`);}
   }
@@ -465,7 +465,7 @@ $('batch-run').addEventListener('click',async()=>{
         const data=mode==='auto'?await getBatchMetadata(item):null;
         const s=sanitizeSettings(batchSettings(settings,data?.metadata,mode));
         const {blob,size}=await encodePhoto(img,s,chosen,mark);
-        if(bytes+blob.size>BATCH_OUTPUT_LIMIT){limited=true;throw new Error('Had hasil 150 MB dicapai. Kurangkan batch atau resolusi.');}
+        if(bytes+blob.size>BATCH_OUTPUT_LIMIT){limited=true;throw new Error('Had ZIP 100 GB dicapai. Kurangkan batch atau resolusi.');}
         entries.push({name:outputName(item.file.name,index,chosen,s.format),blob});bytes+=blob.size;completed++;
         item.status=`Siap · ${size.width} × ${size.height}${decoded.source==='RAW preview'?' · RAW preview':''}${mode==='auto'&&!data.found?' · tiada EXIF':''}`;
       }catch(e){failed++;item.status=`Gagal: ${e.message}`;item.state.classList.add('failed');}
@@ -480,7 +480,8 @@ $('batch-run').addEventListener('click',async()=>{
     const report=[`FRAMELABS · ${TEMPLATE_NAMES[chosen]}`,`Metadata: ${mode}`,summary,...batchQueue.map(item=>`${item.file.name.replace(/[\r\n]/g,' ')}: ${item.status}`)].join('\n');
     entries.push({name:'batch-report.txt',blob:new Blob([report],{type:'text/plain;charset=utf-8'})});
     const archive=await createZip(entries);batchURL=URL.createObjectURL(archive);
-    const link=$('batch-result');link.href=batchURL;link.download=`framelabs-${chosen}-batch-${Date.now()}.zip`;link.textContent=`Download ZIP · ${completed} foto (${(archive.size/1024/1024).toFixed(1)} MB)`;link.hidden=false;
+    const archiveSize=archive.size>=1024**3?`${(archive.size/1024**3).toFixed(2)} GB`:`${(archive.size/1024**2).toFixed(1)} MB`;
+    const link=$('batch-result');link.href=batchURL;link.download=`framelabs-${chosen}-batch-${Date.now()}.zip`;link.textContent=`Download ZIP · ${completed} foto (${archiveSize})`;link.hidden=false;
     $('batch-status').textContent=`${batchCancelled?'Batch dihentikan. ':''}${summary} ZIP mengandungi hasil yang berjaya dan laporan. Jika download tidak bermula, tekan pautan di bawah.`;
     if(!batchCancelled)link.click();
   }catch(e){$('batch-status').textContent=`ZIP tidak dapat disediakan: ${e.message} Cuba resolusi 2048 px atau batch lebih kecil.`;}
