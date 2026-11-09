@@ -38,10 +38,6 @@ function renderFavorites() {
   const list = readFavorites();
   const panel = $('favorites');
   panel.replaceChildren();
-  const note = document.createElement('p');
-  note.className = 'helper';
-  note.textContent = list.length ? 'Pilih bingkai favorit.' : 'Belum ada favorit. Tandakan bintang.';
-  panel.append(note);
   for (const button of templates) {
     const key = button.dataset.template;
     const name = button.querySelector('b').textContent;
@@ -151,24 +147,6 @@ for (const button of document.querySelectorAll('.studio-nav [data-action]')) {
     else openSheet('settings');
   });
 }
-
-for (const button of document.querySelectorAll('[data-filter]')) {
-  button.addEventListener('click', () => {
-    const picked = button.dataset.filter;
-    document.querySelectorAll('[data-filter]').forEach(item => {
-      const active = item === button;
-      item.classList.toggle('active', active);
-      item.setAttribute('aria-pressed', String(active));
-    });
-    for (const card of templates) {
-      const groups = (card.dataset.categories || '').split(' ');
-      card.hidden = picked !== 'all' && !groups.includes(picked);
-    }
-  });
-}
-
-const categories = { soft: 'blur', overlay: 'minimal', white: 'classic minimal' };
-templates.forEach(button => { button.dataset.categories = categories[button.dataset.template] || ''; });
 
 $('photo-input').addEventListener('change', event => {
   if (event.target.files?.length && !body.classList.contains('v3-picking')) closeGallery();

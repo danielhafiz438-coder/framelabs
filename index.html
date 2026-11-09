@@ -42,8 +42,8 @@
         <div class="canvas-wrap"><canvas id="preview" width="1200" height="850" role="img" aria-label="Pratonton foto dengan bingkai"></canvas></div>
         <p class="drop-overlay" aria-hidden="true">Lepas untuk buka</p>
       </div>
-      <div class="preview-caption"><span id="photo-name">Foto contoh</span><span id="dimensions"></span></div>
-      <p id="save-state" class="save-state" role="status">Tetapan disimpan</p>
+      <div class="preview-caption"><span id="photo-name"></span><span id="dimensions"></span></div>
+      <p id="save-state" class="save-state" role="status"></p>
       <p id="status" class="toast" role="status" aria-live="polite" hidden></p>
       <p id="error" class="toast toast-error" role="alert" hidden></p>
     </section>
@@ -56,31 +56,23 @@
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
         </button>
       </div>
-      <div class="segmented" role="group" aria-label="Kategori bingkai">
-        <button type="button" data-filter="all" aria-pressed="true">Semua</button>
-        <button type="button" data-filter="blur" aria-pressed="false">Kabur</button>
-        <button type="button" data-filter="minimal" aria-pressed="false">Minimal</button>
-        <button type="button" data-filter="classic" aria-pressed="false">Klasik</button>
-      </div>
       <div id="templates" class="template-list">
         <button class="template selected" type="button" data-template="soft" aria-pressed="true">
           <canvas width="240" height="164" aria-hidden="true"></canvas>
-          <span class="template-caption"><b>Soft Frame</b><small>Latar kabur</small></span>
+          <span class="template-caption"><b>Soft Frame</b></span>
         </button>
         <button class="template" type="button" data-template="overlay" aria-pressed="false">
           <canvas width="240" height="164" aria-hidden="true"></canvas>
-          <span class="template-caption"><b>On Photo</b><small>Teks atas foto</small></span>
+          <span class="template-caption"><b>On Photo</b></span>
         </button>
         <button class="template" type="button" data-template="white" aria-pressed="false">
           <canvas width="240" height="164" aria-hidden="true"></canvas>
-          <span class="template-caption"><b>Gallery White</b><small>Mat putih</small></span>
+          <span class="template-caption"><b>Gallery White</b></span>
         </button>
       </div>
       <div class="gallery-actions">
         <button id="upload-main" class="pill pill-strong" type="button">Pilih foto</button>
-        <button id="use-demo" class="text-button" type="button">Foto contoh</button>
       </div>
-      <p class="helper">Foto diproses di peranti. Salinan disimpan 10 minit.</p>
     </aside>
 
     <aside class="sheet inspector" id="settings-sheet" aria-label="Tetapan">
@@ -99,7 +91,6 @@
         <fieldset class="settings-section">
           <legend>Bingkai</legend>
           <div class="crop-hint">
-            <p>Seret foto untuk laraskan. Cubit untuk zoom.</p>
             <button type="button" id="reset-crop" class="text-button">Reset crop</button>
           </div>
           <label class="field-label" for="ratio">Nisbah</label>
@@ -155,7 +146,6 @@
 
         <fieldset class="settings-section">
           <legend>Kamera</legend>
-          <p class="helper" id="exif-status">EXIF dibaca daripada foto.</p>
           <label class="check-field"><input id="showExif" name="showExif" type="checkbox">Tetapan kamera</label>
           <div class="field-grid">
             <div><label class="field-label" for="focal">Focal</label><input id="focal" name="focal" type="text" maxlength="20" placeholder="85mm"></div>
@@ -179,18 +169,16 @@
 
       <section class="batch-section" aria-labelledby="batch-title">
         <h2 id="batch-title">Batch</h2>
-        <p class="helper">30 foto, 300 MB. Satu demi satu.</p>
         <label class="field-label" for="batch-metadata">Maklumat kamera</label>
         <select id="batch-metadata">
           <option value="auto">EXIF setiap foto</option>
           <option value="editor">Guna tetapan editor</option>
         </select>
-        <p class="helper" id="batch-mode-help"></p>
         <div class="batch-actions">
           <button type="button" id="batch-select" class="pill">Pilih foto</button>
           <button type="button" id="batch-clear" class="text-button" disabled>Kosongkan</button>
         </div>
-        <p id="batch-count" class="helper">Belum ada foto.</p>
+        <p id="batch-count" class="helper"></p>
         <div id="batch-preview-gallery" class="batch-preview-gallery" role="group" aria-label="Pratonton batch"></div>
         <p id="batch-preview-status" class="helper" role="status" aria-live="polite"></p>
         <details class="batch-file-details">
@@ -206,8 +194,6 @@
 
       <details class="storage-details">
         <summary>Simpanan</summary>
-        <p>Tetapan, logo dan salinan foto (maksimum 2048 px) disimpan dalam browser ini. Salinan foto dipadam 10 minit selepas disimpan.</p>
-        <p>JPG, PNG, WebP, AVIF dan HEIC/HEIF dibaca. RAW guna preview JPEG dalam fail. GPS tidak dibaca.</p>
         <button type="button" id="clear-storage" class="text-button danger">Padam simpanan</button>
       </details>
     </aside>
