@@ -33,9 +33,7 @@ try{
   assert.equal(await page.locator('[data-template="rounded"]').count(),0);
   assert.equal(await bodyHas('gallery-open'),true);
 
-  // Gallery filters stay reachable, and the sheet closes on its own control.
-  await page.locator('[data-filter="classic"]').click();
-  assert.equal(await page.locator('[data-template="soft"]').isVisible(),false);
+  // Gallery keeps its own close control.
   await page.locator('#gallery-close').click();
   assert.equal(await bodyHas('gallery-open'),false);
 
@@ -56,7 +54,8 @@ try{
   assert.equal(await page.locator('#settings-sheet').getAttribute('data-sheet'),'settings');
   assert.equal(await page.locator('#settings').isVisible(),true);
   assert.equal(await page.locator('#cropX,#cropY,#cropZoom').count(),0,'Crop is gesture driven');
-  assert.match(await page.locator('.crop-hint p').textContent(),/Cubit/);
+  assert.equal(await page.locator('.crop-hint p').count(),0,'No instruction paragraph left in the sheet');
+  assert.equal(await page.locator('#reset-crop').isVisible(),true);
   assert.equal(await page.locator('.settings-section').count(),4);
   await page.keyboard.press('Escape');
   assert.equal(await bodyHas('sheet-open'),false);
@@ -93,7 +92,7 @@ try{
   assert.equal(await page.locator('.v3-scope').evaluate(el=>el.hidden),false,'A real batch shows the edit scope');
 
   // The focused photo is copied to storage, and that copy carries a ten minute deadline.
-  await page.waitForFunction(()=>/dipadam dalam/.test(document.querySelector('#save-state').textContent),undefined,{timeout:10000});
+  await page.waitForFunction(()=>/^\d+:\d{2}$/.test(document.querySelector('#save-state').textContent),undefined,{timeout:10000});
   const deadline=Number((await stored()).photoExpiresAt);
   const remaining=deadline-Date.now();
   assert.ok(remaining>9*60*1000&&remaining<=10*60*1000,`deadline should be about ten minutes, got ${remaining}`);
