@@ -35,12 +35,17 @@
   <main class="studio" id="editor">
     <section class="preview-panel" aria-label="Pratonton">
       <div class="preview-toolbar">
-        <span id="current-template">Soft Frame</span>
+        <div class="frame-switch" id="frame-switch" role="group" aria-label="Bingkai">
+          <button type="button" data-frame="soft" aria-pressed="true">Soft Frame</button>
+          <button type="button" data-frame="overlay" aria-pressed="false">On Photo</button>
+          <button type="button" data-frame="white" aria-pressed="false">Gallery White</button>
+        </div>
         <button id="compare" class="text-button" type="button" aria-pressed="false">Sebelum</button>
       </div>
       <div class="preview-stage" id="drop-zone">
         <div class="canvas-wrap"><canvas id="preview" width="1200" height="850" role="img" aria-label="Pratonton foto dengan bingkai"></canvas></div>
         <p class="drop-overlay" aria-hidden="true">Lepas untuk buka</p>
+        <span id="zoom-badge" class="zoom-badge" hidden></span>
       </div>
       <div class="preview-caption"><span id="photo-name"></span><span id="dimensions"></span></div>
       <p id="save-state" class="save-state" role="status"></p>
