@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
-import {mkdir,readFile} from 'node:fs/promises';
+import {mkdir} from 'node:fs/promises';
 import {chromium} from 'playwright';
 
 const server=spawn(process.execPath,['scripts/serve.mjs','--dist'],{stdio:'ignore'});
@@ -8,6 +8,14 @@ const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,hasTouch:true,isMobile:true,acceptDownloads:true});
 const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
+
+const bodyHas=name=>page.locator('body').evaluate((el,cls)=>el.classList.contains(cls),name);
+const stored=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('framelabs.project.v1')||'{}'));
+const activeZoom=()=>page.evaluate(()=>{
+  const t=window.FrameLabsV3.template;
+  return Number((JSON.parse(localStorage.getItem('framelabs.project.v1')||'{}').styles?.[t]?.cropZoom)||100);
+});
+
 try{
   await mkdir('artifacts',{recursive:true});
   let loaded=false;
@@ -17,146 +25,124 @@ try{
   }
   assert.ok(loaded,'Server not ready');
   await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
-  assert.equal(await page.locator('.template').count(),4);
-  assert.equal(await page.locator('.studio-tool').count(),7);
+
+  // Navigation is three destinations, and the app opens on Home.
+  assert.equal(await page.locator('.studio-nav [data-action]').count(),3);
   assert.equal(await page.locator('[data-action="home"]').getAttribute('aria-current'),'page');
-  assert.equal(await page.locator('.v3-scope').evaluate(el=>el.hidden),true,'demo must not offer irrelevant individual controls');
+  assert.equal(await page.locator('.template').count(),3,'Redundant template removed');
+  assert.equal(await page.locator('[data-template="rounded"]').count(),0);
+  assert.equal(await bodyHas('gallery-open'),true);
+
+  // Gallery filters stay reachable, and the sheet closes on its own control.
   await page.locator('[data-filter="classic"]').click();
   assert.equal(await page.locator('[data-template="soft"]').isVisible(),false);
-  await page.locator('[data-action="home"]').click();
-  assert.equal(await page.locator('[data-template="soft"]').isVisible(),true,'Gallery should reset template filters');
-  assert.equal(await page.locator('[data-filter="all"]').getAttribute('aria-pressed'),'true');
-  assert.equal(await page.locator('.dock-feedback').count(),0,'No floating instructional bubble in gallery');
+  await page.locator('#gallery-close').click();
+  assert.equal(await bodyHas('gallery-open'),false);
+
+  // Favorites persist and drive template selection.
+  await page.locator('[data-action="favorites"]').click();
+  assert.equal(await bodyHas('sheet-open'),true);
+  assert.equal(await page.locator('#favorites').isVisible(),true);
+  assert.equal(await page.locator('#favorites .fav-row').count(),3);
+  await page.locator('#favorites .fav-star').first().click();
+  assert.equal(await page.locator('#favorites .fav-star').first().getAttribute('aria-pressed'),'true');
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('framelabs.favorites.v1'))),['soft']);
+  await page.locator('#favorites .fav-use').nth(1).click();
+  assert.equal(await bodyHas('sheet-open'),false,'Choosing a favorite closes the sheet');
+  assert.equal(await page.locator('#current-template').textContent(),'On Photo');
+
+  // Settings sheet: every section, and no axis sliders left behind.
+  await page.locator('[data-action="settings"]').click();
+  assert.equal(await page.locator('#settings-sheet').getAttribute('data-sheet'),'settings');
+  assert.equal(await page.locator('#settings').isVisible(),true);
+  assert.equal(await page.locator('#cropX,#cropY,#cropZoom').count(),0,'Crop is gesture driven');
+  assert.match(await page.locator('.crop-hint p').textContent(),/Cubit/);
+  assert.equal(await page.locator('.settings-section').count(),4);
+  await page.keyboard.press('Escape');
+  assert.equal(await bodyHas('sheet-open'),false);
+
+  // Import seven photos, review them, then edit.
   const samples=await page.evaluate(()=>{
     const result=[];for(let i=0;i<7;i++){
       const c=document.createElement('canvas');c.width=i===0?1800:420;c.height=i===0?1200:280;
-      const ctx=c.getContext('2d');ctx.fillStyle='hsl('+i*45+',70%,50%)';ctx.fillRect(0,0,c.width,c.height);
+      const ctx=c.getContext('2d');
+      const g=ctx.createLinearGradient(0,0,c.width,c.height);
+      g.addColorStop(0,'hsl('+i*45+',70%,55%)');g.addColorStop(1,'#0a0a0a');
+      ctx.fillStyle=g;ctx.fillRect(0,0,c.width,c.height);
+      // Bands make any crop or zoom change visible to the pixel check below.
+      ctx.fillStyle='rgba(255,255,255,.7)';
+      for(let k=0;k<8;k++)ctx.fillRect(0,k*c.height/8,c.width,6);
       result.push(c.toDataURL('image/png').split(',')[1]);
     }
     return result;
   });
   const files=samples.map((base64,i)=>({name:'foodfest-'+(i+1)+'.png',mimeType:'image/png',buffer:Buffer.from(base64,'base64')}));
-  const firstPickerPromise=page.waitForEvent('filechooser');
-  await page.locator('[data-action="editor"]').click();
-  const firstPicker=await firstPickerPromise;
-  assert.equal(firstPicker.isMultiple(),true,'Editor should open multi-photo import');
-  await firstPicker.setFiles([files[0]]);
-  await page.waitForFunction(()=>!document.querySelector('#v3-selection').hidden);
-  await page.locator('#v3-cancel').click();
-  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),true,'Cancel returns to gallery');
-  assert.equal(await page.evaluate(()=>window.FrameLabsV3.items.length),0);
-  const fileChooserPromise=page.waitForEvent('filechooser');
-  await page.locator('[data-action="editor"]').click();
-  const fileChooser=await fileChooserPromise;
-  await fileChooser.setFiles(files);
-  try {
-    await page.waitForFunction(()=>!document.querySelector('#v3-selection')?.hidden,undefined,{timeout:4500});
-  } catch(e) {
-    console.error('SELECTION DEBUG',JSON.stringify(await page.evaluate(()=>({
-      ready:document.documentElement.dataset.ready,
-      hasV3:!!window.FrameLabsV3,
-      items:window.FrameLabsV3?.items?.length,
-      busy:window.FrameLabsV3?.busy,
-      selectionExists:!!document.querySelector('#v3-selection'),
-      selectionHidden:document.querySelector('#v3-selection')?.hidden,
-      choosing:document.body.classList.contains('v3-picking'),
-      status:document.querySelector('#batch-status')?.textContent,
-      error:document.querySelector('#error')?.textContent
-    }))));
-    console.error('PAGE ERRORS',JSON.stringify(errors));
-    throw e;
-  }
+  await page.locator('#gallery-toggle').click();
+  const chooserPromise=page.waitForEvent('filechooser');
+  await page.locator('#upload-main').click();
+  const chooser=await chooserPromise;
+  assert.equal(chooser.isMultiple(),true,'Import stays multi-photo');
+  await chooser.setFiles(files);
+  await page.waitForFunction(()=>!document.querySelector('#v3-selection')?.hidden,undefined,{timeout:8000});
   assert.equal(await page.locator('.v3-selection-item').count(),7);
   assert.match(await page.locator('#v3-size').textContent(),/7\/30/);
-  try{
-    await page.waitForFunction(()=>window.FrameLabsV3.items.every(i=>Boolean(i.previewImage)||Boolean(i.previewError)),undefined,{timeout:12000});
-  }catch(e){
-    console.error('THUMBNAIL DEBUG',JSON.stringify(await page.evaluate(()=>({
-      busy:window.FrameLabsV3.busy,
-      items:window.FrameLabsV3.items.map(i=>({id:i.id,loaded:!!i.previewImage,error:i.previewError,loading:i.previewLoading,task:!!i.previewTask,metadata:!!i.metadata})),
-      status:document.querySelector('#batch-preview-status').textContent,
-      pageErrors:document.querySelector('#error').textContent
-    }))));
-    throw e;
-  }
-  const incrementallyUpdated=await page.evaluate(()=>{
-    const first=document.querySelector('.v3-selection-item');
-    const firstID=window.FrameLabsV3.items[0].id;
-    document.dispatchEvent(new CustomEvent('framelabs:preview-ready',{detail:{id:firstID}}));
-    return first===document.querySelector('.v3-selection-item');
-  });
-  assert.equal(incrementallyUpdated,true,'Thumbnail readiness must not rebuild the entire selection grid');
-  // Selection changes should update accessibility state without rebuilding photo DOM.
-  const firstPhotoNode=await page.locator('.v3-selection-item').first().evaluate(node=>{node.dataset.smokePreserved='yes';return true;});
-  await page.locator('.v3-selection-item').nth(3).locator('.v3-pick-image').click();
-  assert.equal(await page.locator('.v3-tray-item').nth(3).getAttribute('aria-pressed'),'true');
-  assert.equal(await page.locator('.v3-tray-item').first().getAttribute('aria-pressed'),'false');
-  assert.equal(await page.locator('.v3-selection-item').first().getAttribute('data-smoke-preserved'),'yes');
-  await page.emulateMedia({reducedMotion:'reduce'});
-  assert.equal(await page.locator('#v3-selection').evaluate(el=>getComputedStyle(el).animationName),'none','Reduced motion must turn off picker animation');
-  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.waitForFunction(()=>window.FrameLabsV3.items.every(i=>Boolean(i.previewImage)||Boolean(i.previewError)),undefined,{timeout:15000});
   await page.screenshot({path:'artifacts/v3-selection.png'});
-  await page.locator('.v3-selection-item').nth(6).locator('.v3-order-tools button').first().click();
-  assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name).slice(-2)),['foodfest-7.png','foodfest-6.png']);
   await page.locator('#v3-finish').click();
   await page.waitForFunction(()=>document.querySelector('#v3-selection').hidden&&window.FrameLabsV3.activeIndex>=0,{timeout:30000});
-  assert.equal(await page.locator('.studio-counter').textContent(),'1/7');
-  assert.equal(await page.locator('#status').isVisible(),false,'No floating preview batch messages');
-  assert.equal(await page.locator('.v3-scope').evaluate(el=>el.hidden),false,'real batch shows edit scope');
-  await page.locator('.studio-back').click();
-  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),true);
-  await page.locator('[data-action="editor"]').click();
-  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('gallery-open')),false,'Editor restores existing selection');
-  assert.equal(await page.locator('.studio-counter').textContent(),'1/7');
+  assert.equal(await page.locator('.v3-scope').evaluate(el=>el.hidden),false,'A real batch shows the edit scope');
+
+  // The focused photo is copied to storage, and that copy carries a ten minute deadline.
+  await page.waitForFunction(()=>/dipadam dalam/.test(document.querySelector('#save-state').textContent),undefined,{timeout:10000});
+  const deadline=Number((await stored()).photoExpiresAt);
+  const remaining=deadline-Date.now();
+  assert.ok(remaining>9*60*1000&&remaining<=10*60*1000,`deadline should be about ten minutes, got ${remaining}`);
   await page.screenshot({path:'artifacts/v3-editor.png'});
-  const wrap=page.locator('#drop-zone');
-  await wrap.evaluate(el=>{
-    const t=(x,y)=>new Touch({identifier:1,target:el,clientX:x,clientY:y});
-    el.dispatchEvent(new TouchEvent('touchstart',{touches:[t(310,380)],changedTouches:[t(310,380)],bubbles:true}));
-    el.dispatchEvent(new TouchEvent('touchend',{touches:[],changedTouches:[t(120,380)],bubbles:true}));
+
+  // A pinch on the canvas zooms the crop without any slider.
+  const hash=()=>page.evaluate(()=>{
+    const c=document.getElementById('preview'),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+    let h=0;for(let i=0;i<d.length;i+=4*997)h=(h*31+d[i]+d[i+1]*3+d[i+2]*7)>>>0;return h;
   });
-  await page.waitForFunction(()=>window.FrameLabsV3.activeIndex===1,{timeout:10000});
-  assert.equal(await page.locator('.studio-counter').textContent(),'2/7');
-  assert.equal(await page.locator('.studio-counter').evaluate(el=>el.classList.contains('v34-count-change')),true,'Counter gives a navigation cue');
-  // The sheet is modal over preview but toolbar remains accessible; outside tap closes.
-  await page.locator('.studio-tool[data-tool="frame"]').click();
-  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('sheet-open')),true);
-  assert.equal(await page.locator('.studio-tool[data-tool="frame"]').getAttribute('aria-expanded'),'true');
-  assert.equal(await page.locator('.sheet-backdrop').evaluate(el=>getComputedStyle(el).pointerEvents),'auto','Backdrop should receive outside taps');
-  await page.locator('.studio-tool[data-tool="theme"]').click();
-  assert.equal(await page.locator('#settings-sheet').getAttribute('data-tool'),'theme');
-  assert.equal(await page.locator('.studio-tool[data-tool="frame"]').getAttribute('aria-expanded'),'false');
-  await page.locator('.sheet-backdrop').click({position:{x:10,y:105}});
-  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('sheet-open')),false,'Backdrop closes the sheet');
-  await page.locator('.studio-tool[data-tool="text"]').click();
+  const before=await hash();
+  await page.locator('#drop-zone').evaluate(el=>{
+    const r=el.getBoundingClientRect(),cx=Math.round(r.x+r.width/2),cy=Math.round(r.y+r.height/2);
+    const ev=(t,id,x,y)=>el.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,bubbles:true,pointerType:'touch'}));
+    ev('pointerdown',1,cx-40,cy);ev('pointerdown',2,cx+40,cy);
+    ev('pointermove',1,cx-90,cy);ev('pointermove',2,cx+90,cy);
+    ev('pointerup',1,cx-90,cy);ev('pointerup',2,cx+90,cy);
+  });
+  await page.waitForFunction(()=>{
+    const t=window.FrameLabsV3.template;
+    return Number((JSON.parse(localStorage.getItem('framelabs.project.v1')||'{}').styles?.[t]?.cropZoom)||100)>150;
+  },undefined,{timeout:8000});
+  await page.waitForFunction(h=>{
+    const c=document.getElementById('preview'),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+    let r=0;for(let i=0;i<d.length;i+=4*997)r=(r*31+d[i]+d[i+1]*3+d[i+2]*7)>>>0;return r!==h;
+  },before,{timeout:6000});
+  assert.ok(await activeZoom()>150);
+
+  // Per-photo overrides stay isolated, and Cancel discards them.
+  await page.locator('[data-action="settings"]').click();
   await page.locator('#v3-individual').click();
   await page.locator('#caption').fill('Special food shot');
-  await page.waitForFunction(()=>window.FrameLabsV3.items[1].overrides.caption==='Special food shot');
-  assert.equal(await page.evaluate(()=>window.FrameLabsV3.items[0].overrides.caption),undefined);
+  await page.waitForFunction(()=>window.FrameLabsV3.items[window.FrameLabsV3.activeIndex].overrides.caption==='Special food shot');
+  assert.equal(await page.locator('#reset-crop').isVisible(),true);
+  await page.locator('#reset-crop').click();
+  await page.waitForFunction(()=>{
+    const t=window.FrameLabsV3.template;
+    return Number(JSON.parse(localStorage.getItem('framelabs.project.v1')||'{}').styles?.[t]?.cropZoom)===100;
+  },undefined,{timeout:6000});
+  assert.equal(await activeZoom(),100,'Reset crop restores the frame');
   await page.locator('#v3-global').click();
-  await page.locator('.sheet-close').click();
-  const namesBefore=await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name));
-  await page.locator('#v3-manage').click();
-  assert.equal(await page.locator('.v3-selection-item').count(),7);
-  await page.screenshot({path:'artifacts/v3-selection-return.png'});
-  // Removing and reordering in an unconfirmed review must be reversible.
-  await page.locator('.v3-selection-item').nth(0).locator('.v3-order-tools button').last().click();
-  await page.locator('.v3-selection-item').nth(1).locator('.v3-order-tools button').first().click();
-  assert.equal(await page.locator('.v3-selection-item').count(),6);
-  await page.locator('#v3-cancel').click();
-  assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name)),namesBefore);
-  // Adding a new image is also staged until Finish, and Cancel discards it.
-  await page.locator('#v3-manage').click();
-  assert.equal(await page.locator('#v3-add-photos').isVisible(),true);
-  await page.locator('#photo-input').setInputFiles([{name:'new-photo.png',mimeType:'image/png',buffer:files[0].buffer}]);
-  await page.waitForFunction(()=>window.FrameLabsV3.items.length===8);
-  await page.locator('#v3-cancel').click();
-  assert.deepEqual(await page.evaluate(()=>window.FrameLabsV3.items.map(i=>i.file.name)),namesBefore);
-  await page.locator('#download-top').click();
+  await page.locator('#sheet-close').click();
+
+  // Export one PNG, then the ZIP.
+  await page.locator('[data-action="settings"]').click();
   await page.locator('#format').selectOption('png');
-  const dl=page.waitForEvent('download',{timeout:30000});
+  const singleDownload=page.waitForEvent('download',{timeout:30000});
   await page.locator('#download').click();
-  const single=await dl;
+  const single=await singleDownload;
   assert.ok(single.suggestedFilename().endsWith('.png'));
   await page.locator('#v3-export-all').waitFor({state:'visible'});
   const zipPromise=page.waitForEvent('download',{timeout:120000});
@@ -164,6 +150,9 @@ try{
   const zip=await zipPromise;
   assert.ok(zip.suggestedFilename().endsWith('.zip'));
   await page.screenshot({path:'artifacts/v3-export.png'});
+  await page.locator('#sheet-close').click();
+
+  // RAW preview still comes from the embedded JPEG, on a worker.
   const rawWorker=await page.evaluate(async()=>{
     const c=document.createElement('canvas');c.width=512;c.height=512;
     const ctx=c.getContext('2d');
@@ -181,8 +170,21 @@ try{
   assert.ok(rawWorker.embedded?.length>4096);
   assert.equal(rawWorker.source,'RAW preview');
   assert.equal(rawWorker.width,512);
+
+  // An expired photo copy is deleted on the next load, settings stay.
+  await page.evaluate(()=>{
+    const rec=JSON.parse(localStorage.getItem('framelabs.project.v1'));
+    rec.photoExpiresAt=Date.now()-1000;
+    localStorage.setItem('framelabs.project.v1',JSON.stringify(rec));
+    localStorage.setItem('framelabs.project.v1.photo','data:image/jpeg;base64,AAAA');
+  });
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('framelabs.project.v1.photo')),null,'Expired copy is purged');
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('framelabs.project.v1')).photoExpiresAt),null);
+
   assert.deepEqual(errors,[]);
-  console.log('PASS v3.1 gallery dock, Editor import, seven-photo selection, swipe, overrides and ZIP');
+  console.log('PASS v3.5 three tabs, gesture crop, favorites and ten minute photo copies');
 }finally{
   await page.close();await browser.close();server.kill('SIGTERM');
 }

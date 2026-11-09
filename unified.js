@@ -1,4 +1,3 @@
-import { attachSwipe } from './gesture.js';
 import { selectionBytes } from './selection.js';
 
 const api=globalThis.FrameLabsV3, $=id=>document.getElementById(id);
@@ -7,13 +6,13 @@ root.id='v3-selection';root.className='v3-selection';root.hidden=true;root.tabIn
 root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label','Semak pilihan foto');
 root.innerHTML=`
   <div class="v3-picker-top"><button type="button" id="v3-back" aria-label="Kembali">‹</button>
-    <strong id="v3-heading">Recents</strong><button type="button" id="v3-cancel">Cancel</button></div>
-  <p class="v3-picker-note">Foto yang kau pilih dari Photos atau Files. Tekan nombor, susun, dan semak sebelum edit.</p>
-  <div class="v3-picker-actions"><button type="button" id="v3-add-photos">+ Add Photos</button><span>JPG · HEIF · RAW preview</span></div>
+    <strong id="v3-heading">Foto</strong><button type="button" id="v3-cancel">Batal</button></div>
+  <p class="v3-picker-note">Semak dan susun sebelum edit.</p>
+  <div class="v3-picker-actions"><button type="button" id="v3-add-photos">Tambah</button><span>JPG · HEIF · RAW</span></div>
   <div id="v3-selection-grid" class="v3-selection-grid" role="group" aria-label="Foto terpilih"></div>
   <div id="v3-selection-tray" class="v3-selection-tray" aria-label="Susunan foto"></div>
-  <div class="v3-picker-footer"><button type="button" id="v3-peek">Preview</button>
-    <span id="v3-size">Original</span><button type="button" id="v3-finish">Finish</button></div>
+  <div class="v3-picker-footer"><button type="button" id="v3-peek">Pratonton</button>
+    <span id="v3-size"></span><button type="button" id="v3-finish">Selesai</button></div>
   <div id="v3-peek-screen" class="v3-peek-screen" hidden><button type="button" id="v3-peek-back">‹ Kembali</button>
     <canvas id="v3-peek-canvas" aria-label="Pratonton imej terpilih"></canvas><p id="v3-peek-name"></p></div>`;
 document.body.append(root);
@@ -26,7 +25,7 @@ const focusBar=$('batch-focus-bar');
 const scopeRow=document.createElement('div');scopeRow.className='v3-scope';
 scopeRow.innerHTML='<div role="group" aria-label="Skop suntingan"><button type="button" id="v3-global" class="active">Semua foto</button><button type="button" id="v3-individual">Foto ini</button></div><button type="button" id="v3-clear-override">Reset foto ini</button>';
 document.querySelector('.inspector-title').after(scopeRow);
-const exportAll=document.createElement('button');exportAll.type='button';exportAll.id='v3-export-all';exportAll.className='button primary full-width';exportAll.textContent='Export semua foto (ZIP)';
+const exportAll=document.createElement('button');exportAll.type='button';exportAll.id='v3-export-all';exportAll.className='button primary full-width';exportAll.textContent='Eksport ZIP';
 document.querySelector('.export-section').append(exportAll);
 const exportReport=document.createElement('div');exportReport.className='v3-export-progress';exportReport.innerHTML='<p id="v3-export-report"></p>';
 document.querySelector('.export-section').append(exportReport);
@@ -40,7 +39,7 @@ function show(){
  returnToGallery=document.body.classList.contains('gallery-open');activeAtReview=api.activeId;
  open=true;peek=false;root.hidden=false;$('v3-peek-screen').hidden=true;
  document.body.classList.add('v3-picking');returnFocus=document.activeElement;
- document.querySelector('.studio-toolbar').inert=true;
+ document.querySelector('.studio-nav').inert=true;
  document.querySelector('.topbar').inert=true;
  document.querySelector('.preview-panel').inert=true;
  gallery.inert=true;document.querySelector('.inspector').inert=true;
@@ -48,7 +47,7 @@ function show(){
 }
 function hide(){
  open=false;peek=false;root.hidden=true;document.body.classList.remove('v3-picking');
- document.querySelector('.studio-toolbar').inert=document.body.classList.contains('gallery-open');
+ document.querySelector('.studio-nav').inert=document.body.classList.contains('gallery-open');
  document.querySelector('.topbar').inert=document.body.classList.contains('gallery-open');
  document.querySelector('.preview-panel').inert=document.body.classList.contains('gallery-open');
  gallery.inert=!document.body.classList.contains('gallery-open');
@@ -90,7 +89,7 @@ function refreshLoadedThumbnail(id){
 function render(){
  const items=available();if(!items.some(x=>x.id===selectedId))selectedId=items[0]?.id||null;
  scopeRow.hidden=items.length<2;
- $('v3-size').textContent=`Original · ${(selectionBytes(items)/1048576).toFixed(1)} MB · ${items.length}/30`;
+ $('v3-size').textContent=`${(selectionBytes(items)/1048576).toFixed(1)} MB · ${items.length}/30`;
  $('v3-finish').disabled=!items.length||api.busy;
  $('v3-peek').disabled=!items.length;
  const grid=$('v3-selection-grid'),tray=$('v3-selection-tray');grid.replaceChildren();tray.replaceChildren();
@@ -122,7 +121,7 @@ function render(){
  });
  pill.hidden=items.length<2;
  pill.textContent=`✓ Batch ${items.length}`;
- if(!document.body.classList.contains('gallery-open')&&items.length)counter.textContent=`${Math.max(1,api.activeIndex+1)}/${items.length}`;
+ if(counter&&!document.body.classList.contains('gallery-open')&&items.length)counter.textContent=`${Math.max(1,api.activeIndex+1)}/${items.length}`;
  $('v3-export-all').hidden=items.length<2;
 }
 async function previewSelected(){
@@ -144,7 +143,7 @@ async function finish(){
  if(api.activeId!==items[0].id){$('v3-finish').disabled=false;return;}
  lastCommitted=[...items];selectedId=items[0].id;
  hide();
- if(document.body.classList.contains('gallery-open'))document.querySelector('[data-action=editor]')?.click();
+ if(document.body.classList.contains('gallery-open'))$('gallery-close')?.click();
  render();
 }
 async function cancel(){
@@ -153,7 +152,7 @@ async function cancel(){
  api.restore(lastCommitted);
  if(activeAtReview&&api.activeId!==activeAtReview&&lastCommitted.some(item=>item.id===activeAtReview))await api.focus(activeAtReview);
  hide();
- if(reopenGallery)document.querySelector('.studio-back')?.click();
+ if(reopenGallery)$('gallery-toggle').click();
  render();
 }
 $('v3-add-photos').onclick=()=>$('photo-input').click();
@@ -187,7 +186,7 @@ document.addEventListener('framelabs:preview-ready',e=>refreshLoadedThumbnail(e.
 document.addEventListener('framelabs:focus',()=>{
  if(open)render();
  refreshScope();
- if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+ if(counter&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
   counter.classList.remove('v34-count-change');
   void counter.offsetWidth;
   counter.classList.add('v34-count-change');
@@ -226,7 +225,6 @@ async function navigate(dir){
   render();
  }finally{navigating=false;}
 }
-attachSwipe($('drop-zone'),navigate);
 window.addEventListener('beforeunload',e=>{
  if(!available().length)return;
  e.preventDefault();e.returnValue='';

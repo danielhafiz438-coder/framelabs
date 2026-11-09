@@ -1,5 +1,5 @@
 export const STORAGE_KEY = 'framelabs.project.v1';
-export const TEMPLATE_NAMES = { soft: 'Soft Frame', overlay: 'On Photo', rounded: 'Rounded Blur', white: 'Gallery White' };
+export const TEMPLATE_NAMES = { soft: 'Soft Frame', overlay: 'On Photo', white: 'Gallery White' };
 export const DEFAULTS = Object.freeze({
   ratio: 'original', cropX:50, cropY:50, cropZoom:100, padding: 6.5, radius: 3, innerRadius: 0, blur: 20, darkness: 78,
   frameColor: '#ffffff', frameVariant: 'original', textColor: '#ffffff', brand: 'IPHONE', camera: 'IPHONE',
@@ -9,7 +9,6 @@ export const DEFAULTS = Object.freeze({
 export const STYLE_DEFAULTS = {
   soft: { padding: 6.5, radius: 3, innerRadius: 0, blur: 20, darkness: 78, textColor: '#ffffff' },
   overlay: { padding: 6.5, radius: 3, innerRadius: 0, blur: 20, darkness: 65, textColor: '#ffffff' },
-  rounded: { padding: 6, radius: 3, innerRadius: 6, blur: 24, darkness: 88, textColor: '#ffffff' },
   white: { padding: 4, radius: 3, innerRadius: 0, blur: 20, darkness: 78, textColor: '#202020', frameColor: '#ffffff' }
 };
 const numericRanges = { cropX:[0,100],cropY:[0,100],cropZoom:[100,300],quality:[50,100], padding: [2,14], radius: [0,8], innerRadius: [0,10], blur: [0,32], darkness: [35,95], textSize: [70,160] };

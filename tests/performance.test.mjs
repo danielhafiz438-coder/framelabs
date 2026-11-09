@@ -54,3 +54,55 @@ test('ZIP fallback retains progress and produces an archive',async()=>{
  const bytes=new Uint8Array(await blob.arrayBuffer());
  assert.equal(new DataView(bytes.buffer).getUint32(0,true),0x04034b50);
 });
+test('stored photo copy is deleted ten minutes after it was saved',()=>{
+ const db=fakeStorage();
+ let clock=1000;
+ const photo='data:image/jpeg;base64,AAAA';
+ const store=createProjectStore(db,()=>clock);
+ assert.equal(store.save({version:1,template:'soft',styles:freshStyles(),photo,logo:null}),'full');
+ assert.equal(store.photoExpiresAt,1000+600000);
+ assert.equal(db.getItem(STORAGE_KEY+'.photo'),photo);
+ clock=1000+599999;
+ assert.equal(createProjectStore(db,()=>clock).restore().photo,photo);
+ clock=1000+600000;
+ assert.equal(createProjectStore(db,()=>clock).restore().photo,null);
+ assert.equal(db.getItem(STORAGE_KEY+'.photo'),null);
+ assert.equal(JSON.parse(db.getItem(STORAGE_KEY)).photoExpiresAt,null);
+});
+test('settings survive the photo deletion and a new photo starts a new clock',()=>{
+ const db=fakeStorage();
+ let clock=5000;
+ const store=createProjectStore(db,()=>clock);
+ const photo='data:image/jpeg;base64,AAAA';
+ store.save({version:1,template:'white',styles:freshStyles(),photo,logo:null,photoName:'a.jpg'});
+ clock+=600000;
+ const expired=createProjectStore(db,()=>clock).restore();
+ assert.equal(expired.photo,null);
+ assert.equal(expired.template,'white');
+ assert.equal(expired.photoName,'a.jpg');
+ const next=createProjectStore(db,()=>clock);
+ next.restore();
+ next.save({...expired,photo});
+ assert.equal(next.photoExpiresAt,clock+600000);
+});
+test('re-saving unchanged settings does not extend the photo deadline',()=>{
+ const db=fakeStorage();
+ let clock=1000;
+ const store=createProjectStore(db,()=>clock);
+ const photo='data:image/jpeg;base64,AAAA';
+ const project={version:1,template:'soft',styles:freshStyles(),photo,logo:null};
+ store.save(project);
+ clock=2000;
+ store.save({...project,template:'white'});
+ assert.equal(store.photoExpiresAt,1000+600000);
+});
+test('clearPhoto removes the stored image but keeps the settings record',()=>{
+ const db=fakeStorage();
+ const store=createProjectStore(db);
+ const photo='data:image/jpeg;base64,AAAA';
+ store.save({version:1,template:'soft',styles:freshStyles(),photo,logo:null});
+ store.clearPhoto();
+ assert.equal(db.getItem(STORAGE_KEY+'.photo'),null);
+ assert.equal(JSON.parse(db.getItem(STORAGE_KEY)).template,'soft');
+ assert.equal(JSON.parse(db.getItem(STORAGE_KEY)).photoExpiresAt,null);
+});
