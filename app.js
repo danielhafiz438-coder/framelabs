@@ -6,7 +6,7 @@ import { openPhoto } from './image-io.js';
 import { selectionEntry, moveEntry, settingsForPhoto } from './selection.js';
 import { previewSize, idleTurn, createIdlePainter } from './preview.js';
 import { BATCH_LIMIT, BATCH_INPUT_LIMIT, BATCH_OUTPUT_LIMIT, validatePhotoFile, outputName } from './batch.js';
-import { createCropGesture } from './crop.js';
+import { createCropGesture, pinchZoom } from './crop.js';
 
 const $ = id => document.getElementById(id);
 const form=$('settings'), preview=$('preview');
@@ -39,6 +39,7 @@ function setBusy(value) {
   for(const id of ['download','download-top','upload-top','upload-main','upload-logo','clear-storage','reset','compare','remove-logo','batch-select']) $(id).disabled=value;
   for(const fieldset of form.querySelectorAll('fieldset'))fieldset.disabled=value;
   for(const button of document.querySelectorAll('[data-template]'))button.disabled=value;
+  for(const chip of document.querySelectorAll('[data-frame]'))chip.disabled=value;
   $('batch-metadata').disabled=value;
   $('batch-clear').disabled=value||!batchQueue.length;
   $('batch-run').disabled=value||!batchQueue.length;
@@ -126,8 +127,17 @@ function syncForm() {
   for(const button of document.querySelectorAll('[data-template]')) {
     const selected=button.dataset.template===template;button.classList.toggle('selected',selected);button.setAttribute('aria-pressed',String(selected));
   }
-  $('current-template').textContent=TEMPLATE_NAMES[template];
+  for(const chip of document.querySelectorAll('[data-frame]')) {
+    const on=chip.dataset.frame===template;chip.classList.toggle('active',on);chip.setAttribute('aria-pressed',String(on));
+  }
+  paintZoom();
   document.dispatchEvent(new Event('editor:settings'));
+}
+function paintZoom(){
+  const settings=batchFocus?effectiveBatchSettings(batchFocus.item):style();
+  const zoom=Math.round(settings.cropZoom||100),badge=$('zoom-badge');
+  badge.hidden=zoom<=100;
+  if(zoom>100)badge.textContent=`${zoom}%`;
 }
 function effectiveBatchSettings(item) {
   return sanitizeSettings(settingsForPhoto({...style()},item.metadata?.metadata,$('batch-metadata').value,{...globalMetadataOverrides,...(item.overrides||{})}));
@@ -221,6 +231,7 @@ form.addEventListener('input',e=>{
 });
 form.addEventListener('change',e=>{if(e.target.name==='blur'){clearTimeout(heavyPreviewTimer);update(true);}});
 for(const button of document.querySelectorAll('[data-template]'))button.addEventListener('click',()=>selectTemplate(button.dataset.template));
+for(const chip of document.querySelectorAll('[data-frame]'))chip.addEventListener('click',()=>selectTemplate(chip.dataset.frame));
 for(const id of ['upload-top','upload-main'])$(id).addEventListener('click',()=>$('photo-input').click());
 $('upload-logo').addEventListener('click',()=>$('logo-input').click());
 $('photo-input').addEventListener('change',e=>{if(e.target.files?.length)addBatchFiles(Array.from(e.target.files));e.target.value='';});
@@ -470,6 +481,7 @@ function addBatchFiles(files) {
   }
   discardBatchResult();drawBatchQueue();$('batch-progress').hidden=true;
   document.dispatchEvent(new CustomEvent('framelabs:selection',{detail:{rejected}}));
+  if(batchQueue.length===1&&files.length===1)focusBatchPhoto(batchQueue[0]);
   $('batch-status').textContent=rejected.length?`${rejected.length} fail ditolak. ${rejected.slice(0,2).join(' ')}`:'Foto dipilih.';
 }
 function openBatch() {
@@ -544,6 +556,7 @@ $('confirm-clear').addEventListener('click',async()=>{
   try{await useDemo(false);$('save-state').textContent='Simpanan dipadam';message('Simpanan dipadam.');}catch{error('Muat semula halaman.');}finally{setBusy(false);}
 });
 window.addEventListener('pagehide',()=>{if(saveTimer)persist();});
+const canCrop=()=>Boolean(photo)&&!busy&&!document.body.classList.contains('sheet-open')&&!document.body.classList.contains('gallery-open');
 createCropGesture({
   element:$('drop-zone'),
   measure:()=>preview.getBoundingClientRect(),
@@ -551,11 +564,23 @@ createCropGesture({
   write:(next,commit)=>{
     Object.assign(style(),next);
     if(comparing){comparing=false;$('compare').setAttribute('aria-pressed','false');}
+    paintZoom();
     update();
     if(commit)queueSave();
   },
-  isEnabled:()=>Boolean(photo)&&!busy&&!document.body.classList.contains('sheet-open')&&!document.body.classList.contains('gallery-open'),
+  isEnabled:canCrop,
 });
+// A mouse has no pinch, so the wheel drives the same zoom, and a double tap resets the crop.
+$('drop-zone').addEventListener('wheel',event=>{
+  if(!canCrop())return;
+  event.preventDefault();
+  const zoom=pinchZoom(style().cropZoom,1-Math.max(-120,Math.min(120,event.deltaY))/600);
+  if(zoom===style().cropZoom)return;
+  Object.assign(style(),{cropZoom:zoom});
+  if(comparing){comparing=false;$('compare').setAttribute('aria-pressed','false');}
+  paintZoom();update();queueSave();
+},{passive:false});
+$('drop-zone').addEventListener('dblclick',()=>{if(canCrop())$('reset-crop').click();});
 async function init() {
   setBusy(true);syncForm();
   try {
@@ -607,7 +632,7 @@ globalThis.FrameLabsV3={
   refresh(){syncForm();update();scheduleBatchThumbPaint();},
   resetCrop(){
     Object.assign(style(),{cropX:50,cropY:50,cropZoom:100});
-    update();queueSave();document.dispatchEvent(new Event('framelabs:edited'));
+    paintZoom();update();queueSave();document.dispatchEvent(new Event('framelabs:edited'));
   }
 };
 

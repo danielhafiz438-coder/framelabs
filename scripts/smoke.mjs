@@ -37,6 +37,13 @@ try{
   await page.locator('#gallery-close').click();
   assert.equal(await bodyHas('gallery-open'),false);
 
+  // Frames switch from the editor without opening the gallery again.
+  await page.locator('[data-frame="white"]').click();
+  assert.equal(await page.evaluate(()=>window.FrameLabsV3.template),'white');
+  assert.equal(await bodyHas('gallery-open'),false);
+  await page.locator('[data-frame="soft"]').click();
+  assert.equal(await page.evaluate(()=>window.FrameLabsV3.template),'soft');
+
   // Favorites persist and drive template selection.
   await page.locator('[data-action="favorites"]').click();
   assert.equal(await bodyHas('sheet-open'),true);
@@ -47,7 +54,7 @@ try{
   assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('framelabs.favorites.v1'))),['soft']);
   await page.locator('#favorites .fav-use').nth(1).click();
   assert.equal(await bodyHas('sheet-open'),false,'Choosing a favorite closes the sheet');
-  assert.equal(await page.locator('#current-template').textContent(),'On Photo');
+  assert.equal(await page.locator('[data-frame][aria-pressed="true"]').getAttribute('data-frame'),'overlay');
 
   // Settings sheet: every section, and no axis sliders left behind.
   await page.locator('[data-action="settings"]').click();
@@ -121,6 +128,22 @@ try{
   },before,{timeout:6000});
   assert.ok(await activeZoom()>150);
 
+  // A mouse zooms the same crop with the wheel, the badge reports it, and a double tap resets.
+  assert.equal(await page.locator('#zoom-badge').isVisible(),true,'Zoom badge appears above 100 percent');
+  const stage=await page.locator('#drop-zone').boundingBox();
+  await page.mouse.move(stage.x+stage.width/2,stage.y+stage.height/2);
+  await page.mouse.wheel(0,-260);
+  await page.waitForFunction(()=>{
+    const t=window.FrameLabsV3.template;
+    return Number((JSON.parse(localStorage.getItem('framelabs.project.v1')||'{}').styles?.[t]?.cropZoom)||100)>225;
+  },undefined,{timeout:6000});
+  await page.locator('#drop-zone').dblclick();
+  await page.waitForFunction(()=>{
+    const t=window.FrameLabsV3.template;
+    return Number(JSON.parse(localStorage.getItem('framelabs.project.v1')||'{}').styles?.[t]?.cropZoom)===100;
+  },undefined,{timeout:6000});
+  assert.equal(await page.locator('#zoom-badge').isVisible(),false,'Badge hides at 100 percent');
+
   // Per-photo overrides stay isolated, and Cancel discards them.
   await page.locator('[data-action="settings"]').click();
   await page.locator('#v3-individual').click();
@@ -150,6 +173,13 @@ try{
   assert.ok(zip.suggestedFilename().endsWith('.zip'));
   await page.screenshot({path:'artifacts/v3-export.png'});
   await page.locator('#sheet-close').click();
+
+  // One photo skips the review picker and lands straight in the editor.
+  await page.evaluate(()=>window.FrameLabsV3.clear());
+  await page.locator('#photo-input').setInputFiles([{name:'single.png',mimeType:'image/png',buffer:files[0].buffer}]);
+  await page.waitForFunction(()=>window.FrameLabsV3.items.length===1&&Boolean(window.FrameLabsV3.activeId),undefined,{timeout:15000});
+  assert.equal(await page.locator('#v3-selection').isVisible(),false,'A single photo opens straight in the editor');
+  await page.waitForFunction(()=>!document.body.classList.contains('v3-picking'));
 
   // RAW preview still comes from the embedded JPEG, on a worker.
   const rawWorker=await page.evaluate(async()=>{

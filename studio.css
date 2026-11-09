@@ -12,6 +12,14 @@
 .gallery-actions{display:flex;align-items:center;gap:10px;padding:8px 0 2px}
 .gallery-actions .pill{flex:1;min-height:var(--tap)}
 
+/* Frame switch stays in the editor, so changing a frame never needs the gallery. */
+.frame-switch{display:flex;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.frame-switch button{flex:none;min-height:40px;padding:0 12px;border-radius:999px;background:var(--surface-2);border:1px solid transparent;
+  color:var(--muted);font-size:12px;white-space:nowrap;transition:color .16s,background .16s,border-color .16s}
+.frame-switch button.active{background:rgba(231,187,121,.16);border-color:rgba(231,187,121,.42);color:var(--accent);font-weight:600}
+.zoom-badge{position:absolute;top:8px;right:8px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.6);
+  color:var(--text);font-size:11px;font-variant-numeric:tabular-nums;pointer-events:none}
+
 /* Crop */
 .crop-hint{display:flex;align-items:center;justify-content:flex-end;margin:2px 0 0}
 .crop-hint .text-button{min-height:36px;color:var(--accent);white-space:nowrap}

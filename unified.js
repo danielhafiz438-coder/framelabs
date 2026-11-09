@@ -180,7 +180,7 @@ function syncExport(){
 document.addEventListener('framelabs:selection',()=>{
  const size=available().length;
  if(size>lastSelection)selectedId=available()[lastSelection]?.id||selectedId;
- lastSelection=size;render();if(!open)show();
+ lastSelection=size;render();if(!open&&size>1)show();
 });
 document.addEventListener('framelabs:preview-ready',e=>refreshLoadedThumbnail(e.detail.id));
 document.addEventListener('framelabs:focus',()=>{
