@@ -1,12 +1,12 @@
 # FRAMELABS
 
-Mobile-first framing editor with a fullscreen image studio, gallery-first template browser, floating controls and bottom-sheet settings. Includes four templates: Soft Frame, On Photo, Rounded Blur, Gallery White. No accounts, backend, analytics or runtime CDNs. Designed for GitHub Pages, including repository subpaths.
+Mobile-first framing editor with a fullscreen image studio, a frame gallery sheet and bottom-sheet settings. Includes three frames: Soft Frame, On Photo, Gallery White. No accounts, backend, analytics or runtime CDNs. Designed for GitHub Pages, including repository subpaths.
 
 ## FrameLabs v3: Unified Photo Studio
 
 The workflow is now **template gallery → native multi-file picker → in-app selection review → unified editor → export**. The in-app selection review shows numbered imported thumbnails, an ordered tray, move-left/right controls, photo removal, image preview, selected count and original file sizes. The browser cannot browse iOS Recents without the system picker; only explicitly chosen local files appear in the review.
 
-Both one-photo and multi-photo editing use the same preview and bottom toolbar. The top counter shows current/total, and horizontal swipe or arrow keys navigate photos. Use **✓ Batch** to manage the selected list. Choose **Semua foto** to apply edits globally or **Foto ini** to create a resettable photo-specific override (including text, EXIF and crop zoom/position). All images use the existing render engine, EXIF logic and local decoder.
+Both one-photo and multi-photo editing use the same preview. Arrow keys and the batch bar move between photos; drag and pinch on the canvas set the crop. Use **✓ Batch** to manage the selected list. Choose **Semua foto** to apply edits globally or **Foto ini** to create a resettable photo-specific override (including text, EXIF and crop). All images use the existing render engine, EXIF logic and local decoder.
 
 **Export gambar** saves the active item from its full decoded source; **Export semua foto (ZIP)** processes all selected original inputs sequentially, applies the individual overrides, and produces a numbered ZIP with a report. RAW editing still relies on embedded JPEG previews, not full RAW demosaicing. Edits and batch photos remain local to this tab; the browser does not receive unattended access to the Photos library. Batch selections are not persisted across reload.
 
@@ -28,7 +28,7 @@ Open http://127.0.0.1:4173. `dist/` contains the deployable static site. `.githu
 
 ## Use
 
-Choose a style from the gallery, select a photo, and use the five bottom tools: **Jenama**, **Teks & EXIF**, **Bingkai**, **Nisbah**, **Batch**. **Eksport** at the top right opens format/resolution options; **Download gambar** saves the result. Settings panels remain above the toolbar so tools can be switched without closing first. Preview stays above the panel, with visible progress and errors. On desktop the same studio provides wide-screen previews. Template settings are remembered separately. Camera information and captions follow the current photo across all four templates. Apple, DJI and Fujifilm logos are bundled locally; other brands use text. Upload a raster logo to use your own mark. No assets were extracted from the reference app.
+Choose a style from the gallery, select a photo, then use the bottom bar: **Home** for the editor, **Favorit** for starred frames, **Setting** for every control in one scroll. **Eksport** at the top right saves the current frame. On desktop the same studio provides wide-screen previews. Frame settings are remembered separately. Camera information and captions follow the current photo across all three frames. Apple, DJI and Fujifilm logos are bundled locally; other brands use text. Upload a raster logo to use your own mark. No assets were extracted from the reference app.
 
 The flow uses the user's screenshots and official FrameCam App Store screenshots as references. It is not verified against an installed iOS app; exact picker transitions, gestures and export-result screens remain unobserved. See DESIGN.md for the evidence boundary.
 
@@ -51,8 +51,8 @@ Batch files and result ZIP live only in memory for the current page session. The
 ## Storage and privacy
 
 - All editing and export happen in the browser. The hosting server only serves static app files. User photos and logos are never transmitted by the app.
-- The only application persistence is localStorage key `framelabs.project.v1`: four template settings, current template, raster logo, camera fields and a compact current-photo copy. No IndexedDB, cookies, remote database or user accounts.
-- Saved photo copies are at most 2048 px and may be reduced further to fit storage. The original loaded photo stays in memory for export until the page closes. Reloaded projects use the saved copy. Originals on disk are never overwritten.
+- The only application persistence is localStorage: `framelabs.project.v1` (three frame settings, current frame, raster logo, camera fields), `framelabs.project.v1.photo` and `.logo` (image copies), and `framelabs.favorites.v1` (starred frames). No IndexedDB, cookies, remote database or user accounts.
+- Saved photo copies are at most 2048 px and may be reduced further to fit storage. A copy is deleted ten minutes after it is written, and on any load past that deadline; settings remain. The original loaded photo stays in memory for export until the page closes. Originals on disk are never overwritten.
 - Failed/quota-limited storage does not prevent editing or download; the UI reports unavailable persistence.
 - GPS is not requested by the EXIF parser or written into exports. Text drawn onto the image is distinct from file EXIF: Canvas exports do not preserve the source EXIF.
 - Storage belongs to this browser and origin, not a cloud account. Clearing browser data removes saved work. Preview and live deployment have separate storage.

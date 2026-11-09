@@ -1,13 +1,49 @@
 # FRAMELABS
 
-Photo framing workspace, based on the user's four reference outputs. Keep the photograph dominant. No marketing landing page, login, ticket templates or video tools.
+Photo framing workspace built from the user's reference outputs. Keep the photograph dominant. No marketing landing page, login, ticket templates or video tools.
 
-Dark charcoal workspace reduces surrounding light while judging photographs. Warm amber marks the selected template and download action. White frame is an output style, separate from the interface theme. Use local system sans-serif for controls and a local monospace font for photographic specifications; no remote fonts or image requests.
+Dial: ENERGY 1 / RHYTHM 1 / MOTION 2.
 
-Mobile first: categorized gallery with a three-action dock, then a large photo editor. Five distinct bottom tools (Jenama, Teks & EXIF, Bingkai, Nisbah, Batch). Export options open from the top-right action; the actual export occurs in its panel. Settings open above the persistent toolbar so one tap switches tools. Preview resizes into the available space above the panel. No duplicate Theme/Height/Margin paths to the same settings. Touch targets are at least 44px, text inputs are 16px to avoid iOS focus zoom, focus returns when panels close, and inactive surfaces are inert.
+## Surface and colour
 
-Reference evidence: the user's supplied modern gallery/output screenshots and the four official [FrameCam App Store screenshots](https://apps.apple.com/us/app/framecam-retro-frames/id6480026789), reviewed 26 October 2026. Official screenshots establish categorized templates, a large editor photograph, a lower brand grid and top-right export. They show an older editor appearance than the user's gallery. Exact photo-picker transitions, gestures, export-result screens and current iOS behavior were not observed; do not claim a verified one-to-one clone.
+Dark charcoal workspace reduces surrounding light while judging photographs. Warm amber marks the selected item and the primary action. White frame is an output style, separate from the interface theme. Local system sans-serif for controls, local monospace for photographic specifications. No remote fonts or image requests.
 
-Preview performance: use at most 1600px main-preview source and 640px cached batch sources. Decode batch thumbnails sequentially, share metadata promises, yield between thumbnail paints and cancel obsolete paint passes. Render template-gallery thumbnails when the gallery is shown. Focused batch navigation reuses the cached preview; exporting reopens the original source. Never export the small preview as the original-resolution output.
+Palette: charcoal `#111110`, surface `#1a1a18`, raised `#232320`, amber `#e7bb79`, text `#f2f2ee`, muted `#a5a59c`. Hairlines are white at 9 percent. Three surfaces, one accent, nothing else.
 
-Output templates: Soft Frame (blur + square inner photo), On Photo (watermark), Rounded Blur (blur + rounded inner photo + dark lower area), Gallery White (white mat + specifications + camera name). Export uses the same renderer as preview and thumbnail.
+## Structure
+
+Mobile first. One photograph, a frame gallery sheet, and a settings sheet, reached from a bottom bar with three destinations: **Home**, **Favorit**, **Setting**.
+
+- Home: the editor, plus the frame gallery sheet behind the grid button.
+- Favorit: frames the user starred, stored in localStorage, tap to apply.
+- Setting: every control in one scroll (Bingkai, Identiti, Kamera, Eksport), with Batch and storage below.
+
+No tool strip. No second path to the same setting. Export is the top-right pill; the export section holds format, size and the download button.
+
+## Crop
+
+Crop is direct manipulation on the canvas: drag to move the photograph, pinch to zoom, reset from the settings sheet. No axis sliders. The gesture writes the same `cropX`, `cropY`, `cropZoom` values the renderer reads, so preview and export cannot disagree.
+
+## Apple-derived rules
+
+These are adopted because this is a touch-first tool for photographs, not as decoration:
+
+- Translucent top bar and bottom bar (`backdrop-filter`), so the photograph reads as the surface beneath the interface.
+- Sheets slide from the bottom with a grabber, a close control and a 0.38s curve (`cubic-bezier(.32,.72,0,1)`); content is visible from the first frame, not after the animation.
+- 44px minimum touch targets, 16px text inputs to avoid iOS focus zoom, visible focus rings, inert inactive surfaces, focus returned when a sheet closes.
+- Depth comes from one hairline and one shadow, not from stacked borders.
+- Reduced motion and reduced transparency are honoured; both fall back to opacity and solid surfaces.
+
+## Storage
+
+Settings, logo and one compact photo copy (max 2048 px) live in localStorage. The photo copy is deleted ten minutes after it is saved, and on any load where that deadline has passed; settings survive. The copy is what a reload can restore, and the reason the deadline exists.
+
+## Preview and export performance
+
+At most a 1600px main-preview source and 512px cached batch sources. Decode batch thumbnails sequentially, share metadata promises, yield between thumbnail paints and cancel obsolete paint passes. Render gallery thumbnails when the gallery is shown. Focused batch navigation reuses the cached preview; exporting reopens the original source. Never export the small preview as the original-resolution output.
+
+## Frames
+
+Soft Frame (blurred photograph as the mat), On Photo (text over the photograph, no mat), Gallery White (white mat with specifications and camera name). Rounded Blur was removed: it was Soft Frame with a different inner radius, reachable from the same controls.
+
+Export uses the same renderer as preview and thumbnail.
