@@ -4,7 +4,7 @@ import { createProjectStore } from './project-storage.js';
 import { createZipResponsive } from './zip-client.js';
 import { openPhoto } from './image-io.js';
 import { selectionEntry, moveEntry, settingsForPhoto } from './selection.js';
-import { previewSize, idleTurn, createIdlePainter } from './preview.js';
+import { previewSize, createIdlePainter } from './preview.js';
 import { BATCH_LIMIT, BATCH_INPUT_LIMIT, BATCH_OUTPUT_LIMIT, validatePhotoFile, outputName } from './batch.js';
 import { createCropGesture, pinchZoom } from './crop.js';
 
@@ -22,7 +22,7 @@ const brandLogos={};
 let batchQueue=[], batchURL=null, batchCancelled=false, nextSelectionId=1, editScope='global', globalMetadataOverrides={};
 let batchFocus=null, batchFocusRequest=0, thumbWorker=null, thumbPaintTimer=0;
 const previewCache=new WeakMap();
-let galleryDirty=true, galleryScheduled=false;
+
 let previewDecode=Promise.resolve();
 const batchPainter=createIdlePainter(item=>{if(!busy&&batchQueue.includes(item))paintBatchThumbnail(item);});
 $('batch-metadata').value=saved?.batchMode||'auto';
@@ -36,7 +36,7 @@ function error(text) {$('error').textContent=text;$('error').hidden=!text;}
 function setBusy(value) {
   busy=value;
   if(value)batchFocusRequest++;
-  for(const id of ['download','download-top','upload-top','upload-main','upload-logo','clear-storage','reset','compare','remove-logo','batch-select']) $(id).disabled=value;
+  for(const id of ['download','upload-top','upload-logo','clear-storage','reset','compare','remove-logo','batch-select']) if($(id))$(id).disabled=value;
   for(const fieldset of form.querySelectorAll('fieldset'))fieldset.disabled=value;
   for(const button of document.querySelectorAll('[data-template]'))button.disabled=value;
   for(const chip of document.querySelectorAll('[data-frame]'))chip.disabled=value;
@@ -164,26 +164,11 @@ function renderPreview() {
   const size=dimensions(source,settings);$('dimensions').textContent=`${size.width} × ${size.height} px`;
   $('photo-name').textContent=batchFocus?`${batchFocus.index+1}/${batchQueue.length} ${batchFocus.item.file.name}`:photoName;
 }
-function renderThumbnails() {
-  if(!photo||!document.body.classList.contains('gallery-open')){galleryDirty=true;return;}
-  galleryDirty=false;
-  if(!previewCache.has(photo))previewCache.set(photo,smallCanvas(photo,1600));
-  for(const button of document.querySelectorAll('[data-template]')) {
-    const target=button.querySelector('canvas'),tmp=document.createElement('canvas'),key=button.dataset.template;
-    render(tmp,previewCache.get(photo),styles[key],key,{maxSide:420,logo,brandLogo:brandLogos[styles[key].brand]});
-    target.width=280;target.height=170;const ctx=target.getContext('2d');ctx.fillStyle='#151614';ctx.fillRect(0,0,280,170);
-    const scale=Math.min(256/tmp.width,146/tmp.height);ctx.drawImage(tmp,(280-tmp.width*scale)/2,(170-tmp.height*scale)/2,tmp.width*scale,tmp.height*scale);
-  }
+
+function update() {
+  cancelAnimationFrame(frame);frame=requestAnimationFrame(renderPreview);
 }
-function update(thumbnails=false) {
-  if(thumbnails)galleryDirty=true;
-  cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{renderPreview();scheduleGalleryPaint();});
-}
-function scheduleGalleryPaint(){
-  if(galleryScheduled||!galleryDirty||!document.body.classList.contains('gallery-open'))return;
-  galleryScheduled=true;idleTurn(()=>{galleryScheduled=false;if(galleryDirty)renderThumbnails();});
-}
-document.addEventListener('studio:view',()=>{scheduleGalleryPaint();if(document.body.classList.contains('sheet-open')&&document.querySelector('.inspector').dataset.sheet==='settings'){ensureBatchThumbnails();paintBatchThumbnails();}});
+document.addEventListener('studio:view',()=>{if(document.body.classList.contains('sheet-open')){ensureBatchThumbnails();paintBatchThumbnails();}});
 function discardExport() {if(exportURL)URL.revokeObjectURL(exportURL);exportURL=null;$('export-link').hidden=true;}
 function selectTemplate(key) {
   if(!Object.hasOwn(TEMPLATE_NAMES,key))return;
@@ -232,7 +217,7 @@ form.addEventListener('input',e=>{
 form.addEventListener('change',e=>{if(e.target.name==='blur'){clearTimeout(heavyPreviewTimer);update(true);}});
 for(const button of document.querySelectorAll('[data-template]'))button.addEventListener('click',()=>selectTemplate(button.dataset.template));
 for(const chip of document.querySelectorAll('[data-frame]'))chip.addEventListener('click',()=>selectTemplate(chip.dataset.frame));
-for(const id of ['upload-top','upload-main'])$(id).addEventListener('click',()=>$('photo-input').click());
+$('upload-top').addEventListener('click',()=>$('photo-input').click());
 $('upload-logo').addEventListener('click',()=>$('logo-input').click());
 $('photo-input').addEventListener('change',e=>{if(e.target.files?.length)addBatchFiles(Array.from(e.target.files));e.target.value='';});
 $('logo-input').addEventListener('change',async e=>{
@@ -254,7 +239,7 @@ async function useDemo(save=true,preserveMetadata=false) {
   const next=await loadImage('./assets/demo-coast.jpg');photo=next;photoData=null;photoName='';exifFound=false;
   if(!preserveMetadata)for(const key of Object.keys(styles))for(const field of ['brand','camera','focal','aperture','shutter','iso'])styles[key][field]=DEFAULTS[field];
   comparing=false;$('compare').setAttribute('aria-pressed','false');
-  syncForm();renderPreview();renderThumbnails();discardExport();if(save)persist();
+  syncForm();renderPreview();discardExport();if(save)persist();
 }
 async function download() {
   if(!photo||busy)return;
@@ -273,7 +258,7 @@ async function download() {
     message(`${s.format.toUpperCase()} ${size.width}×${size.height}`);
   }catch(e){error(e.message||'Eksport gagal. Cuba saiz 2048 px.');message('Eksport gagal.');}finally{setBusy(false);}
 }
-for(const id of ['download','download-top'])$(id).addEventListener('click',download);
+$('download').addEventListener('click',download);
 async function readMetadata(file) {
   let tags={};
   try{tags=await globalThis.exifr.parse(file,['Make','Model','FocalLength','FocalLengthIn35mmFormat','FNumber','ExposureTime','ISO'])||{};}catch{}
@@ -590,7 +575,7 @@ async function init() {
       try{photo=await loadImage(photoData);message('Salinan dibuka.');}
       catch{photoData=null;await useDemo(false);message('Salinan rosak.');}
     }else await useDemo(false,Boolean(saved));
-    syncForm();renderPreview();renderThumbnails();
+    syncForm();renderPreview();
   }catch{error('Muat semula halaman.');}
   finally{setBusy(false);document.documentElement.dataset.ready='true';}
 }

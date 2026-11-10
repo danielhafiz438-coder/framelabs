@@ -12,13 +12,13 @@ Palette: charcoal `#111110`, surface `#1a1a18`, raised `#232320`, amber `#e7bb79
 
 ## Structure
 
-Mobile first. One photograph, a frame gallery sheet, and a settings sheet, reached from a bottom bar with three destinations: **Home**, **Favorit**, **Setting**.
+Mobile first. One photograph, one settings sheet, one frame switcher.
 
-- Home: the editor, plus the frame gallery sheet behind the grid button.
-- Favorit: frames the user starred, stored in localStorage, tap to apply.
-- Setting: every control in one scroll (Bingkai, Identiti, Kamera, Eksport), with Batch and storage below.
+- Frame chips sit under the top bar. They are the only way to change the template, so the choice is one tap and the main canvas is its own preview.
+- **Tetapan** opens from the top-bar sliders button and lands on three essentials: Nisbah, Ketebalan and frame colour.
+- **Lanjutan** collapses everything else (corners, blur, identity, camera, export options, batch, storage). The sheet therefore opens at roughly 480 px instead of a 2300 px scroll.
 
-No tool strip. No second path to the same setting. Export is the top-right pill; the export section holds format, size and the download button.
+No bottom navigation, no favourites list, no tool strip. No second path to the same setting: the top-right **Eksport** pill is the only export action, and the export section only holds format, size and quality.
 
 ## Crop
 
@@ -28,7 +28,7 @@ Crop is direct manipulation on the canvas: drag to move the photograph, pinch to
 
 These are adopted because this is a touch-first tool for photographs, not as decoration:
 
-- Translucent top bar and bottom bar (`backdrop-filter`), so the photograph reads as the surface beneath the interface.
+- Translucent top bar (`backdrop-filter`), so the photograph reads as the surface beneath the interface.
 - Sheets slide from the bottom with a grabber, a close control and a 0.38s curve (`cubic-bezier(.32,.72,0,1)`); content is visible from the first frame, not after the animation.
 - 44px minimum touch targets, 16px text inputs to avoid iOS focus zoom, visible focus rings, inert inactive surfaces, focus returned when a sheet closes.
 - Depth comes from one hairline and one shadow, not from stacked borders.
@@ -40,7 +40,7 @@ Settings, logo and one compact photo copy (max 2048 px) live in localStorage. Th
 
 ## Preview and export performance
 
-At most a 1600px main-preview source and 512px cached batch sources. Decode batch thumbnails sequentially, share metadata promises, yield between thumbnail paints and cancel obsolete paint passes. Render gallery thumbnails when the gallery is shown. Focused batch navigation reuses the cached preview; exporting reopens the original source. Never export the small preview as the original-resolution output.
+At most a 1600px main-preview source and 512px cached batch sources. Decode batch thumbnails sequentially, share metadata promises, yield between thumbnail paints and cancel obsolete paint passes. The frame chips render nothing: the single preview is the preview. Focused batch navigation reuses the cached preview; exporting reopens the original source. Never export the small preview as the original-resolution output.
 
 ## Frames
 

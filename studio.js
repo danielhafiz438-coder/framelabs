@@ -1,18 +1,12 @@
-/* FrameLabs interface: gallery sheet, settings sheet, favorites and the bottom bar.
-   app.js owns the engine and exposes it as FrameLabsV3; this file only builds and wires UI. */
+/* FrameLabs interface: one settings sheet with two layers (Bingkai, Lanjutan) and the
+   frame chips in the toolbar. app.js owns the engine and exposes it as FrameLabsV3;
+   this file only builds and wires UI. */
 const $ = id => document.getElementById(id);
 const body = document.body;
 const inspector = document.querySelector('.inspector');
-const catalog = $('gallery');
 const form = $('settings');
-const FAVORITES_KEY = 'framelabs.favorites.v1';
-const templates = [...document.querySelectorAll('[data-template]')];
 const api = () => globalThis.FrameLabsV3;
-
-const icons = {
-  star: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 4 2.4 5 5.6.8-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9 5.6-.8z"/></svg>',
-  starOn: '<svg aria-hidden="true" viewBox="0 0 24 24" class="filled"><path d="m12 4 2.4 5 5.6.8-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9 5.6-.8z"/></svg>',
-};
+const template = () => api()?.template || 'soft';
 
 let toastTimer = 0;
 function message(text) {
@@ -23,146 +17,47 @@ function message(text) {
   toastTimer = setTimeout(() => { status.hidden = true; }, 2600);
 }
 
-function readFavorites() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(FAVORITES_KEY));
-    return Array.isArray(raw) ? raw.filter(key => templates.some(button => button.dataset.template === key)) : [];
-  } catch { return []; }
-}
-
-function writeFavorites(list) {
-  try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(list)); } catch { /* Storage denied; favorites stay for this session. */ }
-}
-
-function renderFavorites() {
-  const list = readFavorites();
-  const panel = $('favorites');
-  panel.replaceChildren();
-  for (const button of templates) {
-    const key = button.dataset.template;
-    const name = button.querySelector('b').textContent;
-    const on = list.includes(key);
-    const row = document.createElement('div');
-    row.className = 'fav-row';
-    const use = document.createElement('button');
-    use.type = 'button';
-    use.className = 'fav-use';
-    use.textContent = name;
-    use.addEventListener('click', () => { button.click(); closeSheet(); });
-    const star = document.createElement('button');
-    star.type = 'button';
-    star.className = 'fav-star';
-    star.setAttribute('aria-pressed', String(on));
-    star.setAttribute('aria-label', `${on ? 'Buang' : 'Tambah'} ${name}`);
-    star.innerHTML = on ? icons.starOn : icons.star;
-    star.addEventListener('click', () => {
-      writeFavorites(on ? list.filter(item => item !== key) : [...list, key]);
-      renderFavorites();
-    });
-    row.append(use, star);
-    panel.append(row);
-  }
-}
-
-function setSheet(name) {
-  inspector.dataset.sheet = name;
-  $('sheet-title').textContent = name === 'favorites' ? 'Favorit' : 'Tetapan';
-  $('reset').hidden = name !== 'settings';
-  $('favorites').hidden = name !== 'favorites';
-  form.hidden = name === 'favorites';
-  inspector.querySelector('.batch-section').hidden = name === 'favorites';
-  inspector.querySelector('.storage-details').hidden = name === 'favorites';
-  const scope = inspector.querySelector('.v3-scope');
-  if (scope && name === 'favorites') scope.hidden = true;
-}
-
-function openSheet(name) {
-  closeGallery();
-  if (name === 'favorites') renderFavorites();
-  setSheet(name);
+/* One sheet, one state: open or closed. */
+function openSheet() {
   body.classList.add('sheet-open');
-  syncSurfaces();
+  $('settings-toggle').setAttribute('aria-expanded', 'true');
   inspector.scrollTop = 0;
-  inspector.querySelector('.sheet-head .icon-button')?.focus();
+  syncSurfaces();
+  $('sheet-close').focus();
 }
 
 function closeSheet() {
   if (!body.classList.contains('sheet-open')) return;
   body.classList.remove('sheet-open');
+  $('settings-toggle').setAttribute('aria-expanded', 'false');
   syncSurfaces();
 }
 
-function openGallery() {
-  closeSheet();
-  body.classList.add('gallery-open');
-  catalog.scrollTop = 0;
-  syncSurfaces();
-  $('gallery-toggle').setAttribute('aria-expanded', 'true');
-  catalog.querySelector('.template.selected')?.focus();
-}
-
-function closeGallery() {
-  if (!body.classList.contains('gallery-open')) return;
-  body.classList.remove('gallery-open');
-  syncSurfaces();
-  $('gallery-toggle').setAttribute('aria-expanded', 'false');
+function toggleSheet() {
+  if (body.classList.contains('sheet-open')) closeSheet();
+  else openSheet();
 }
 
 function syncSurfaces() {
-  const galleryOpen = body.classList.contains('gallery-open');
   const sheetOpen = body.classList.contains('sheet-open');
   const picking = body.classList.contains('v3-picking');
-  catalog.inert = !galleryOpen || picking;
   inspector.inert = !sheetOpen || picking;
-  document.querySelector('.preview-panel').inert = galleryOpen || sheetOpen || picking;
-  document.querySelector('.studio-nav').inert = picking;
+  document.querySelector('.preview-panel').inert = sheetOpen || picking;
   document.querySelector('.topbar').inert = picking;
-  document.querySelectorAll('.studio-nav [data-action]').forEach(button => {
-    const sheet = sheetOpen ? inspector.dataset.sheet : null;
-    const current = (button.dataset.action === 'favorites' && sheet === 'favorites')
-      || (button.dataset.action === 'settings' && sheet === 'settings')
-      || (button.dataset.action === 'home' && !sheet);
-    if (current) button.setAttribute('aria-current', 'page');
-    else button.removeAttribute('aria-current');
-  });
   document.dispatchEvent(new Event('studio:view'));
 }
 
-$('gallery-toggle').addEventListener('click', () => {
-  if (body.classList.contains('gallery-open')) closeGallery();
-  else openGallery();
-});
-$('gallery-close').addEventListener('click', closeGallery);
+$('settings-toggle').addEventListener('click', toggleSheet);
 $('sheet-close').addEventListener('click', closeSheet);
 $('reset-crop').addEventListener('click', () => api()?.resetCrop());
-
-for (const button of document.querySelectorAll('.studio-nav [data-action]')) {
-  button.addEventListener('click', () => {
-    const action = button.dataset.action;
-    if (action === 'home') {
-      closeSheet();
-      if (api()?.hasPhoto) closeGallery();
-      else openGallery();
-    } else if (action === 'favorites') openSheet('favorites');
-    else openSheet('settings');
-  });
-}
-
-$('photo-input').addEventListener('change', event => {
-  if (event.target.files?.length && !body.classList.contains('v3-picking')) closeGallery();
-});
-templates.forEach(button => button.addEventListener('click', () => {
-  if (api()?.hasPhoto) closeGallery();
-}));
 
 document.addEventListener('keydown', event => {
   if (event.key !== 'Escape' || body.classList.contains('v3-picking')) return;
   if (body.classList.contains('sheet-open')) closeSheet();
-  else if (body.classList.contains('gallery-open')) closeGallery();
 });
 
 // Frame swatches replace a plain colour field for the frame templates.
-const frameSection = sections()[0];
+const frameSection = form.querySelector('[data-section="bingkai"]');
 const framePalette = document.createElement('div');
 framePalette.id = 'frame-palette';
 framePalette.className = 'frame-palette';
@@ -191,7 +86,7 @@ for (const [value, label] of [['original', 'Auto'], ['white', 'Putih'], ['black'
   item.setAttribute('aria-label', label);
   item.title = label;
   item.addEventListener('click', () => {
-    if (document.querySelector('.template.selected')?.dataset.template === 'overlay') {
+    if (template() === 'overlay') {
       message('On Photo tiada bingkai luar.');
       return;
     }
@@ -204,7 +99,7 @@ for (const [value, label] of [['original', 'Auto'], ['white', 'Putih'], ['black'
 
 function refreshPalette() {
   const saved = form.elements.frameVariant?.value || 'original';
-  framePalette.hidden = document.querySelector('.template.selected')?.dataset.template === 'overlay';
+  framePalette.hidden = template() === 'overlay';
   paletteList.querySelectorAll('.palette-choice').forEach(button => {
     const on = button.dataset.palette === saved;
     button.classList.toggle('selected', on);
@@ -213,7 +108,7 @@ function refreshPalette() {
 }
 
 // Brand picker: three groups, each a row of logo buttons.
-const brandField = sections()[1];
+const brandField = form.querySelector('[data-section="identiti"]');
 const brandSelect = $('brand');
 const brandTabs = document.createElement('div');
 brandTabs.className = 'brand-tabs';
@@ -291,8 +186,6 @@ form.addEventListener('input', event => {
   queueMicrotask(() => { brandPending = false; refreshBrand(); });
 });
 
-function sections() { return [...form.querySelectorAll('.settings-section')]; }
-
 document.addEventListener('editor:settings', () => { refreshPalette(); refreshBrand(); });
 document.addEventListener('editor:busy', event => {
   for (const button of inspector.querySelectorAll('.brand-choice,.brand-tab,.palette-choice')) {
@@ -300,14 +193,11 @@ document.addEventListener('editor:busy', event => {
   }
 });
 document.addEventListener('framelabs:edited', refreshPalette);
-templates.forEach(button => button.addEventListener('click', refreshPalette));
+for (const chip of document.querySelectorAll('[data-frame]')) chip.addEventListener('click', refreshPalette);
 
 new ResizeObserver(() => {
   document.documentElement.style.setProperty('--sheet-height', `${inspector.offsetHeight}px`);
 }).observe(inspector);
 
-renderFavorites();
 refreshPalette();
-setSheet('settings');
 syncSurfaces();
-openGallery();
