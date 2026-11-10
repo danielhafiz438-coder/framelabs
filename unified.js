@@ -46,9 +46,8 @@ function show(){
 }
 function hide(){
  open=false;peek=false;root.hidden=true;document.body.classList.remove('v3-picking');
- document.querySelector('.topbar').inert=false;
- document.querySelector('.preview-panel').inert=false;
- document.querySelector('.inspector').inert=!document.body.classList.contains('sheet-open');
+ if(globalThis.syncStudioSurfaces)globalThis.syncStudioSurfaces();
+ else{document.querySelector('.topbar').inert=false;document.querySelector('.preview-panel').inert=false;document.querySelector('.inspector').inert=false;}
  if(returnFocus?.isConnected&&!returnFocus.disabled)returnFocus.focus();
 }
 function drawThumb(target,item){

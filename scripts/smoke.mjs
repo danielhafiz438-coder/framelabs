@@ -207,8 +207,36 @@ try{
   assert.equal(await page.evaluate(()=>localStorage.getItem('framelabs.project.v1.photo')),null,'Expired copy is purged');
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('framelabs.project.v1')).photoExpiresAt),null);
 
+
+  // The same markup adapts: inspector docked on desktop, sheet on tablet and phone.
+  const desktopPage=await browser.newPage({viewport:{width:1440,height:900}});
+  desktopPage.on('pageerror',e=>errors.push('desktop: '+e.message));
+  await desktopPage.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
+  await desktopPage.waitForFunction(()=>document.documentElement.dataset.ready==='true');
+  assert.equal(await desktopPage.locator('#settings').isVisible(),true,'Desktop docks the inspector without opening a sheet');
+  assert.equal(await desktopPage.locator('#settings-toggle').isVisible(),false,'No sheet toggle when the panel is docked');
+  assert.equal(await desktopPage.locator('#sheet-close').isVisible(),false,'No close control on a docked panel');
+  assert.equal(await desktopPage.locator('.preview-panel').evaluate(el=>el.inert),false,'The photo stays live beside the panel');
+  const desktopPreview=await desktopPage.evaluate(()=>document.querySelector('#preview').getBoundingClientRect().width);
+  assert.ok(desktopPreview>500,`Preview keeps a usable width on desktop, got ${desktopPreview}`);
+  assert.equal(await desktopPage.evaluate(()=>document.documentElement.scrollWidth-innerWidth),0,'No horizontal overflow on desktop');
+  await desktopPage.screenshot({path:'artifacts/v3-desktop.png'});
+
+  const tabletPage=await browser.newPage({viewport:{width:820,height:1180},hasTouch:true,isMobile:true});
+  tabletPage.on('pageerror',e=>errors.push('tablet: '+e.message));
+  await tabletPage.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
+  await tabletPage.waitForFunction(()=>document.documentElement.dataset.ready==='true');
+  assert.equal(await tabletPage.locator('#settings').isVisible(),false,'Tablet keeps the sheet closed');
+  await tabletPage.locator('#settings-toggle').click();
+  await tabletPage.waitForFunction(()=>document.body.classList.contains('sheet-open'));
+  assert.equal(await tabletPage.locator('#settings').isVisible(),true,'Tablet opens the sheet');
+  assert.equal(await tabletPage.locator('.preview-panel').evaluate(el=>el.inert),true,'An open sheet takes the pointer');
+  assert.equal(await tabletPage.evaluate(()=>document.documentElement.scrollWidth-innerWidth),0,'No horizontal overflow on tablet');
+  await tabletPage.screenshot({path:'artifacts/v3-tablet.png'});
+  await desktopPage.close();await tabletPage.close();
+
   assert.deepEqual(errors,[]);
-  console.log('PASS v3.7 one frame switcher, one export action, short settings sheet, gesture crop and ten minute photo copies');
+  console.log('PASS v3.7 one frame switcher, one export action, short settings sheet, docked desktop inspector and ten minute photo copies');
 }finally{
   await page.close();await browser.close();server.kill('SIGTERM');
 }

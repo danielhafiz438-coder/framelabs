@@ -28,7 +28,9 @@ Open http://127.0.0.1:4173. `dist/` contains the deployable static site. `.githu
 
 ## Use
 
-Pick a frame with the chips under the top bar, add a photo, then open **Tetapan** for Nisbah, Ketebalan and frame colour; corners, blur, identity, camera, export options and batch sit under **Lanjutan**. **Eksport** at the top right is the single export action. On desktop the same studio provides wide-screen previews. Frame settings are remembered separately. Camera information and captions follow the current photo across all three frames. Apple, DJI and Fujifilm logos are bundled locally; other brands use text. Upload a raster logo to use your own mark. No assets were extracted from the reference app.
+Pick a frame with the chips under the top bar, add a photo, then open **Tetapan** for Nisbah, Ketebalan and frame colour; corners, blur, identity, camera, export options and batch sit under **Lanjutan**. **Eksport** at the top right is the single export action.
+
+Below 1000 px the inspector is a bottom sheet behind the sliders button, over a full-width preview. From 1000 px up the same panel docks as a right-hand column: the photo keeps a live preview, the sheet toggle and close control disappear, and the panel scrolls on its own. No separate desktop build, no feature hidden behind a breakpoint. Frame settings are remembered separately. Camera information and captions follow the current photo across all three frames. Apple, DJI and Fujifilm logos are bundled locally; other brands use text. Upload a raster logo to use your own mark. No assets were extracted from the reference app.
 
 The flow uses the user's screenshots and official FrameCam App Store screenshots as references. It is not verified against an installed iOS app; exact picker transitions, gestures and export-result screens remain unobserved. See DESIGN.md for the evidence boundary.
 

@@ -10,6 +10,8 @@
   --ease:cubic-bezier(.32,.72,0,1);
   --tap:44px;
   --sheet-height:0px;
+  /* Width of the docked inspector once the viewport can hold it beside the photo. */
+  --panel-w:clamp(340px,25vw,400px);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -49,7 +51,7 @@ a{color:inherit}
 
 /* Shell */
 .studio{position:fixed;inset:0;display:flex;padding-top:calc(52px + env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom)}
-.preview-panel{flex:1;display:flex;flex-direction:column;min-height:0;padding:0 14px}
+.preview-panel{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;padding:0 14px}
 .preview-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;font-size:13px;color:var(--muted)}
 .preview-stage{position:relative;flex:1;min-height:0;display:grid;place-items:center;touch-action:none;overflow:hidden}
 .canvas-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
@@ -130,6 +132,24 @@ dialog p{margin:0 0 16px;font-size:14px;color:var(--muted);line-height:1.5}
   .preview-panel{padding:0 36px}
   .sheet{left:50%;right:auto;transform:translate(-50%,101%);width:min(620px,94vw);border-radius:var(--r-l);border:1px solid var(--hairline-strong);max-height:calc(100dvh - 72px)}
   body.sheet-open .inspector{transform:translate(-50%,0)}
+}
+
+/* Desktop: the inspector docks beside the photo instead of covering it. The sheet
+   chrome that only exists to open and close it (grabber, close, top-bar toggle)
+   is removed, and the floating controls re-centre over the preview column. */
+@media(min-width:1000px){
+  .studio{display:grid;grid-template-columns:minmax(0,1fr) var(--panel-w)}
+  .preview-panel{padding:0 clamp(24px,3vw,56px)}
+  .inspector{position:static;inset:auto;width:auto;max-height:none;height:100%;
+    transform:none;visibility:visible;border:0;border-left:1px solid var(--hairline-strong);
+    border-radius:0;box-shadow:none;padding:12px 22px calc(24px + env(safe-area-inset-bottom))}
+  body.sheet-open .inspector{transform:none}
+  .sheet-grabber,#sheet-close,#settings-toggle{display:none}
+  .sheet-head{position:sticky;top:0;padding:8px 0 6px;background:var(--surface)}
+  .sheet-head h2{font-size:17px}
+  .v3-manage{right:calc(var(--panel-w) + 20px)}
+  .batch-focus-bar{left:24px;right:calc(var(--panel-w) + 24px);width:auto;transform:none}
+  .toast{left:calc((100% - var(--panel-w)) / 2)}
 }
 @media(max-width:360px){
   .wordmark{font-size:13px;letter-spacing:.1em}

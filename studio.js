@@ -17,13 +17,15 @@ function message(text) {
   toastTimer = setTimeout(() => { status.hidden = true; }, 2600);
 }
 
-/* One sheet, one state: open or closed. */
+/* One inspector, two presentations: a bottom sheet below 1000px, a docked column above it. */
+const desktop = window.matchMedia('(min-width: 1000px)');
+
 function openSheet() {
   body.classList.add('sheet-open');
   $('settings-toggle').setAttribute('aria-expanded', 'true');
   inspector.scrollTop = 0;
   syncSurfaces();
-  $('sheet-close').focus();
+  if (!desktop.matches) $('sheet-close').focus();
 }
 
 function closeSheet() {
@@ -41,11 +43,16 @@ function toggleSheet() {
 function syncSurfaces() {
   const sheetOpen = body.classList.contains('sheet-open');
   const picking = body.classList.contains('v3-picking');
-  inspector.inert = !sheetOpen || picking;
-  document.querySelector('.preview-panel').inert = sheetOpen || picking;
+  const docked = desktop.matches;
+  inspector.inert = picking || (!docked && !sheetOpen);
+  document.querySelector('.preview-panel').inert = picking || (!docked && sheetOpen);
   document.querySelector('.topbar').inert = picking;
   document.dispatchEvent(new Event('studio:view'));
 }
+
+// Crossing the breakpoint changes which surface is live, without a reload.
+desktop.addEventListener('change', syncSurfaces);
+globalThis.syncStudioSurfaces = syncSurfaces;
 
 $('settings-toggle').addEventListener('click', toggleSheet);
 $('sheet-close').addEventListener('click', closeSheet);
