@@ -8,9 +8,8 @@
 .zoom-badge{position:absolute;top:8px;right:8px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.6);
   color:var(--text);font-size:11px;font-variant-numeric:tabular-nums;pointer-events:none}
 
-/* Crop: the reset sits on the section label line instead of owning a row. */
-.settings-section[data-section=bingkai]{position:relative}
-.crop-hint{position:absolute;top:8px;right:0;margin:0}
+/* Crop: a compact right-aligned row under the section label. */
+.crop-hint{display:flex;align-items:center;justify-content:flex-end;margin:-4px 0 0}
 .crop-hint .text-button{min-height:32px;color:var(--accent);white-space:nowrap;font-size:13px}
 
 /* Frame swatches */
