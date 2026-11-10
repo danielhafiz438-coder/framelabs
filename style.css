@@ -147,6 +147,7 @@ dialog p{margin:0 0 16px;font-size:14px;color:var(--muted);line-height:1.5}
   .sheet-grabber,#sheet-close,#settings-toggle{display:none}
   .sheet-head{position:sticky;top:0;padding:8px 0 6px;background:var(--surface)}
   .sheet-head h2{font-size:17px}
+  .preview-toolbar{justify-content:center;gap:16px}
   .v3-manage{right:calc(var(--panel-w) + 20px)}
   .batch-focus-bar{left:24px;right:calc(var(--panel-w) + 24px);width:auto;transform:none}
   .toast{left:calc((100% - var(--panel-w)) / 2)}

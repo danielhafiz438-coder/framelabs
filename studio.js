@@ -104,9 +104,17 @@ for (const [value, label] of [['original', 'Auto'], ['white', 'Putih'], ['black'
   paletteList.append(item);
 }
 
+// On Photo has no mat by design, so the empty-looking section says why.
+const overlayHint = document.createElement('p');
+overlayHint.id = 'overlay-hint';
+overlayHint.className = 'helper';
+overlayHint.textContent = 'On Photo tiada bingkai luar, jadi ketebalan dan warna bingkai tidak digunakan.';
+frameSection.append(overlayHint);
+
 function refreshPalette() {
   const saved = form.elements.frameVariant?.value || 'original';
   framePalette.hidden = template() === 'overlay';
+  overlayHint.hidden = template() !== 'overlay';
   paletteList.querySelectorAll('.palette-choice').forEach(button => {
     const on = button.dataset.palette === saved;
     button.classList.toggle('selected', on);

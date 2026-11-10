@@ -5,6 +5,9 @@
 .frame-switch button{flex:none;min-height:40px;padding:0 12px;border-radius:999px;background:var(--surface-2);border:1px solid transparent;
   color:var(--muted);font-size:12px;white-space:nowrap;transition:color .16s,background .16s,border-color .16s}
 .frame-switch button.active{background:rgba(231,187,121,.16);border-color:rgba(231,187,121,.42);color:var(--accent);font-weight:600}
+#compare{min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--hairline);
+  background:var(--surface-2);color:var(--muted);font-size:12px;font-weight:500;transition:color .16s,background .16s,border-color .16s}
+#compare[aria-pressed=true]{background:rgba(231,187,121,.16);border-color:rgba(231,187,121,.42);color:var(--accent)}
 .zoom-badge{position:absolute;top:8px;right:8px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.6);
   color:var(--text);font-size:11px;font-variant-numeric:tabular-nums;pointer-events:none}
 
