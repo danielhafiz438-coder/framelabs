@@ -16,7 +16,7 @@ root.innerHTML=`
   <div id="v3-peek-screen" class="v3-peek-screen" hidden><button type="button" id="v3-peek-back">‹ Kembali</button>
     <canvas id="v3-peek-canvas" aria-label="Pratonton imej terpilih"></canvas><p id="v3-peek-name"></p></div>`;
 document.body.append(root);
-const gallery=document.querySelector('.template-panel');
+// No frame gallery: the toolbar chips are the only frame switcher.
 const pill=document.createElement('button');pill.type='button';pill.id='v3-manage';pill.className='v3-manage';
 pill.textContent='Batch';pill.hidden=true;pill.setAttribute('aria-label','Urus foto terpilih');
 document.querySelector('.preview-panel').append(pill);
@@ -31,27 +31,23 @@ const exportReport=document.createElement('div');exportReport.className='v3-expo
 document.querySelector('.export-section').append(exportReport);
 const exportControls=document.createElement('div');exportControls.className='v3-export-controls';exportControls.append($('batch-progress'),$('batch-cancel'),$('batch-result'));
 document.querySelector('.export-section').append(exportControls);
-let open=false,lastCommitted=[],lastSelection=0,selectedId=null,navigating=false,peek=false,returnFocus=null,returnToGallery=false,activeAtReview=null;
+let open=false,lastCommitted=[],lastSelection=0,selectedId=null,navigating=false,peek=false,returnFocus=null,activeAtReview=null;
 
 const available=()=>api.items;
 function show(){
  if(api.busy)return;
- returnToGallery=document.body.classList.contains('gallery-open');activeAtReview=api.activeId;
+ activeAtReview=api.activeId;
  open=true;peek=false;root.hidden=false;$('v3-peek-screen').hidden=true;
  document.body.classList.add('v3-picking');returnFocus=document.activeElement;
- document.querySelector('.studio-nav').inert=true;
  document.querySelector('.topbar').inert=true;
  document.querySelector('.preview-panel').inert=true;
- gallery.inert=true;document.querySelector('.inspector').inert=true;
+ document.querySelector('.inspector').inert=true;
  render();root.focus();
 }
 function hide(){
  open=false;peek=false;root.hidden=true;document.body.classList.remove('v3-picking');
- document.querySelector('.studio-nav').inert=document.body.classList.contains('gallery-open');
- document.querySelector('.topbar').inert=document.body.classList.contains('gallery-open');
- document.querySelector('.preview-panel').inert=document.body.classList.contains('gallery-open');
- gallery.inert=!document.body.classList.contains('gallery-open');
- document.querySelector('.inspector').inert=!document.body.classList.contains('sheet-open');
+ if(globalThis.syncStudioSurfaces)globalThis.syncStudioSurfaces();
+ else{document.querySelector('.topbar').inert=false;document.querySelector('.preview-panel').inert=false;document.querySelector('.inspector').inert=false;}
  if(returnFocus?.isConnected&&!returnFocus.disabled)returnFocus.focus();
 }
 function drawThumb(target,item){
@@ -121,7 +117,7 @@ function render(){
  });
  pill.hidden=items.length<2;
  pill.textContent=`✓ Batch ${items.length}`;
- if(counter&&!document.body.classList.contains('gallery-open')&&items.length)counter.textContent=`${Math.max(1,api.activeIndex+1)}/${items.length}`;
+ if(counter&&items.length)counter.textContent=`${Math.max(1,api.activeIndex+1)}/${items.length}`;
  $('v3-export-all').hidden=items.length<2;
 }
 async function previewSelected(){
@@ -143,16 +139,13 @@ async function finish(){
  if(api.activeId!==items[0].id){$('v3-finish').disabled=false;return;}
  lastCommitted=[...items];selectedId=items[0].id;
  hide();
- if(document.body.classList.contains('gallery-open'))$('gallery-close')?.click();
  render();
 }
 async function cancel(){
  if(!open)return;
- const reopenGallery=returnToGallery&&lastCommitted.length===0;
  api.restore(lastCommitted);
  if(activeAtReview&&api.activeId!==activeAtReview&&lastCommitted.some(item=>item.id===activeAtReview))await api.focus(activeAtReview);
  hide();
- if(reopenGallery)$('gallery-toggle').click();
  render();
 }
 $('v3-add-photos').onclick=()=>$('photo-input').click();

@@ -15,6 +15,8 @@ const activeZoom=()=>page.evaluate(()=>{
   const t=window.FrameLabsV3.template;
   return Number((JSON.parse(localStorage.getItem('framelabs.project.v1')||'{}').styles?.[t]?.cropZoom)||100);
 });
+const sheetHeight=()=>page.evaluate(()=>document.querySelector('.inspector').scrollHeight);
+const openAdvanced=()=>page.evaluate(()=>{const d=document.getElementById('advanced');if(!d.open)d.open=true;});
 
 try{
   await mkdir('artifacts',{recursive:true});
@@ -26,44 +28,40 @@ try{
   assert.ok(loaded,'Server not ready');
   await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
 
-  // Navigation is three destinations, and the app opens on Home.
-  assert.equal(await page.locator('.studio-nav [data-action]').count(),3);
-  assert.equal(await page.locator('[data-action="home"]').getAttribute('aria-current'),'page');
-  assert.equal(await page.locator('.template').count(),3,'Redundant template removed');
-  assert.equal(await page.locator('[data-template="rounded"]').count(),0);
-  assert.equal(await bodyHas('gallery-open'),true);
-
-  // Gallery keeps its own close control.
-  await page.locator('#gallery-close').click();
+  // One frame switcher, one settings sheet, no bottom navigation.
+  assert.equal(await page.locator('.studio-nav').count(),0,'No bottom navigation');
+  assert.equal(await page.locator('#gallery-toggle').count(),0,'No frame gallery button');
+  assert.equal(await page.locator('.template').count(),0,'No gallery thumbnails');
+  assert.equal(await page.locator('[data-frame]').count(),3,'Three frame chips');
   assert.equal(await bodyHas('gallery-open'),false);
+  assert.equal(await bodyHas('sheet-open'),false,'The app opens on the editor');
+  assert.equal(await page.locator('#download').isVisible(),true,'The top bar holds the only export action');
+  assert.equal(await page.locator('#settings').isHidden(),true);
 
-  // Frames switch from the editor without opening the gallery again.
+  // Frames switch from the editor chips alone.
   await page.locator('[data-frame="white"]').click();
   assert.equal(await page.evaluate(()=>window.FrameLabsV3.template),'white');
-  assert.equal(await bodyHas('gallery-open'),false);
   await page.locator('[data-frame="soft"]').click();
   assert.equal(await page.evaluate(()=>window.FrameLabsV3.template),'soft');
 
-  // Favorites persist and drive template selection.
-  await page.locator('[data-action="favorites"]').click();
+  // Settings opens from the top bar, shows the essentials, and keeps Lanjutan closed.
+  await page.locator('#settings-toggle').click();
   assert.equal(await bodyHas('sheet-open'),true);
-  assert.equal(await page.locator('#favorites').isVisible(),true);
-  assert.equal(await page.locator('#favorites .fav-row').count(),3);
-  await page.locator('#favorites .fav-star').first().click();
-  assert.equal(await page.locator('#favorites .fav-star').first().getAttribute('aria-pressed'),'true');
-  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('framelabs.favorites.v1'))),['soft']);
-  await page.locator('#favorites .fav-use').nth(1).click();
-  assert.equal(await bodyHas('sheet-open'),false,'Choosing a favorite closes the sheet');
-  assert.equal(await page.locator('[data-frame][aria-pressed="true"]').getAttribute('data-frame'),'overlay');
-
-  // Settings sheet: every section, and no axis sliders left behind.
-  await page.locator('[data-action="settings"]').click();
-  assert.equal(await page.locator('#settings-sheet').getAttribute('data-sheet'),'settings');
   assert.equal(await page.locator('#settings').isVisible(),true);
-  assert.equal(await page.locator('#cropX,#cropY,#cropZoom').count(),0,'Crop is gesture driven');
   assert.equal(await page.locator('.crop-hint p').count(),0,'No instruction paragraph left in the sheet');
   assert.equal(await page.locator('#reset-crop').isVisible(),true);
-  assert.equal(await page.locator('.settings-section').count(),4);
+  assert.equal(await page.locator('#ratio').isVisible(),true,'Aspect ratio stays an essential');
+  assert.equal(await page.locator('#padding').isVisible(),true,'Frame thickness stays an essential');
+  assert.equal(await page.locator('#frame-palette').isVisible(),true,'Frame colour stays an essential');
+  assert.equal(await page.locator('#blur').isVisible(),false,'Blur sits under Lanjutan');
+  assert.equal(await page.locator('#advanced').evaluate(el=>el.open),false,'Lanjutan starts collapsed');
+  const short=await sheetHeight();
+  assert.ok(short<700,`Closed sheet stays short, got ${short}px`);
+  await openAdvanced();
+  assert.equal(await page.locator('#blur').isVisible(),true,'Lanjutan reveals the rest');
+  assert.equal(await page.locator('.settings-section').count(),5);
+  assert.ok(await sheetHeight()>short,'Expanded sheet is taller');
+  await page.locator('#cropX,#cropY,#cropZoom').count().then(count=>assert.equal(count,0,'Crop is gesture driven'));
   await page.keyboard.press('Escape');
   assert.equal(await bodyHas('sheet-open'),false);
 
@@ -83,9 +81,8 @@ try{
     return result;
   });
   const files=samples.map((base64,i)=>({name:'foodfest-'+(i+1)+'.png',mimeType:'image/png',buffer:Buffer.from(base64,'base64')}));
-  await page.locator('#gallery-toggle').click();
   const chooserPromise=page.waitForEvent('filechooser');
-  await page.locator('#upload-main').click();
+  await page.locator('#upload-top').click();
   const chooser=await chooserPromise;
   assert.equal(chooser.isMultiple(),true,'Import stays multi-photo');
   await chooser.setFiles(files);
@@ -145,11 +142,11 @@ try{
   assert.equal(await page.locator('#zoom-badge').isVisible(),false,'Badge hides at 100 percent');
 
   // Per-photo overrides stay isolated, and Cancel discards them.
-  await page.locator('[data-action="settings"]').click();
+  await page.locator('#settings-toggle').click();
+  await openAdvanced();
   await page.locator('#v3-individual').click();
   await page.locator('#caption').fill('Special food shot');
   await page.waitForFunction(()=>window.FrameLabsV3.items[window.FrameLabsV3.activeIndex].overrides.caption==='Special food shot');
-  assert.equal(await page.locator('#reset-crop').isVisible(),true);
   await page.locator('#reset-crop').click();
   await page.waitForFunction(()=>{
     const t=window.FrameLabsV3.template;
@@ -157,10 +154,8 @@ try{
   },undefined,{timeout:6000});
   assert.equal(await activeZoom(),100,'Reset crop restores the frame');
   await page.locator('#v3-global').click();
-  await page.locator('#sheet-close').click();
 
-  // Export one PNG, then the ZIP.
-  await page.locator('[data-action="settings"]').click();
+  // Export one PNG from the top bar, then the ZIP from the sheet.
   await page.locator('#format').selectOption('png');
   const singleDownload=page.waitForEvent('download',{timeout:30000});
   await page.locator('#download').click();
@@ -212,8 +207,36 @@ try{
   assert.equal(await page.evaluate(()=>localStorage.getItem('framelabs.project.v1.photo')),null,'Expired copy is purged');
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('framelabs.project.v1')).photoExpiresAt),null);
 
+
+  // The same markup adapts: inspector docked on desktop, sheet on tablet and phone.
+  const desktopPage=await browser.newPage({viewport:{width:1440,height:900}});
+  desktopPage.on('pageerror',e=>errors.push('desktop: '+e.message));
+  await desktopPage.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
+  await desktopPage.waitForFunction(()=>document.documentElement.dataset.ready==='true');
+  assert.equal(await desktopPage.locator('#settings').isVisible(),true,'Desktop docks the inspector without opening a sheet');
+  assert.equal(await desktopPage.locator('#settings-toggle').isVisible(),false,'No sheet toggle when the panel is docked');
+  assert.equal(await desktopPage.locator('#sheet-close').isVisible(),false,'No close control on a docked panel');
+  assert.equal(await desktopPage.locator('.preview-panel').evaluate(el=>el.inert),false,'The photo stays live beside the panel');
+  const desktopPreview=await desktopPage.evaluate(()=>document.querySelector('#preview').getBoundingClientRect().width);
+  assert.ok(desktopPreview>500,`Preview keeps a usable width on desktop, got ${desktopPreview}`);
+  assert.equal(await desktopPage.evaluate(()=>document.documentElement.scrollWidth-innerWidth),0,'No horizontal overflow on desktop');
+  await desktopPage.screenshot({path:'artifacts/v3-desktop.png'});
+
+  const tabletPage=await browser.newPage({viewport:{width:820,height:1180},hasTouch:true,isMobile:true});
+  tabletPage.on('pageerror',e=>errors.push('tablet: '+e.message));
+  await tabletPage.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
+  await tabletPage.waitForFunction(()=>document.documentElement.dataset.ready==='true');
+  assert.equal(await tabletPage.locator('#settings').isVisible(),false,'Tablet keeps the sheet closed');
+  await tabletPage.locator('#settings-toggle').click();
+  await tabletPage.waitForFunction(()=>document.body.classList.contains('sheet-open'));
+  assert.equal(await tabletPage.locator('#settings').isVisible(),true,'Tablet opens the sheet');
+  assert.equal(await tabletPage.locator('.preview-panel').evaluate(el=>el.inert),true,'An open sheet takes the pointer');
+  assert.equal(await tabletPage.evaluate(()=>document.documentElement.scrollWidth-innerWidth),0,'No horizontal overflow on tablet');
+  await tabletPage.screenshot({path:'artifacts/v3-tablet.png'});
+  await desktopPage.close();await tabletPage.close();
+
   assert.deepEqual(errors,[]);
-  console.log('PASS v3.5 three tabs, gesture crop, favorites and ten minute photo copies');
+  console.log('PASS v3.7 one frame switcher, one export action, short settings sheet, docked desktop inspector and ten minute photo copies');
 }finally{
   await page.close();await browser.close();server.kill('SIGTERM');
 }

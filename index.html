@@ -20,15 +20,15 @@
   <a class="skip-link" href="#editor">Terus ke editor</a>
 
   <header class="topbar">
-    <button id="gallery-toggle" class="icon-button" type="button" aria-label="Galeri bingkai" aria-expanded="false">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-    </button>
     <span class="wordmark">FRAME<span class="wordmark-light">LABS</span></span>
     <div class="topbar-actions">
       <button id="upload-top" class="icon-button" type="button" aria-label="Pilih foto">
         <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>
       </button>
-      <button id="download-top" class="pill" type="button">Eksport</button>
+      <button id="settings-toggle" class="icon-button" type="button" aria-label="Tetapan" aria-expanded="false" aria-controls="settings-sheet">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h10m4 0h2M4 17h4m4 0h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+      </button>
+      <button id="download" class="pill pill-strong" type="button">Eksport</button>
     </div>
   </header>
 
@@ -53,33 +53,6 @@
       <p id="error" class="toast toast-error" role="alert" hidden></p>
     </section>
 
-    <aside class="sheet template-panel" id="gallery" aria-labelledby="gallery-title">
-      <div class="sheet-grabber" aria-hidden="true"></div>
-      <div class="sheet-head">
-        <h1 id="gallery-title">Bingkai</h1>
-        <button id="gallery-close" class="icon-button" type="button" aria-label="Tutup galeri">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
-        </button>
-      </div>
-      <div id="templates" class="template-list">
-        <button class="template selected" type="button" data-template="soft" aria-pressed="true">
-          <canvas width="240" height="164" aria-hidden="true"></canvas>
-          <span class="template-caption"><b>Soft Frame</b></span>
-        </button>
-        <button class="template" type="button" data-template="overlay" aria-pressed="false">
-          <canvas width="240" height="164" aria-hidden="true"></canvas>
-          <span class="template-caption"><b>On Photo</b></span>
-        </button>
-        <button class="template" type="button" data-template="white" aria-pressed="false">
-          <canvas width="240" height="164" aria-hidden="true"></canvas>
-          <span class="template-caption"><b>Gallery White</b></span>
-        </button>
-      </div>
-      <div class="gallery-actions">
-        <button id="upload-main" class="pill pill-strong" type="button">Pilih foto</button>
-      </div>
-    </aside>
-
     <aside class="sheet inspector" id="settings-sheet" aria-label="Tetapan">
       <div class="sheet-grabber" aria-hidden="true"></div>
       <div class="sheet-head inspector-title">
@@ -90,10 +63,8 @@
         </button>
       </div>
 
-      <section class="favorites" id="favorites" aria-label="Bingkai favorit" hidden></section>
-
       <form id="settings" autocomplete="off">
-        <fieldset class="settings-section">
+        <fieldset class="settings-section" data-section="bingkai">
           <legend>Bingkai</legend>
           <div class="crop-hint">
             <button type="button" id="reset-crop" class="text-button">Reset crop</button>
@@ -111,113 +82,105 @@
             <option value="9:16">9:16</option>
           </select>
           <div class="range-field" data-control="padding"><label for="padding">Ketebalan <output for="padding" id="padding-value"></output></label><input id="padding" name="padding" type="range" min="2" max="14" step="0.5"></div>
-          <div class="range-field" data-control="radius"><label for="radius">Bucu luar <output for="radius" id="radius-value"></output></label><input id="radius" name="radius" type="range" min="0" max="8" step="0.5"></div>
-          <div class="range-field" data-control="innerRadius"><label for="innerRadius">Bucu foto <output for="innerRadius" id="innerRadius-value"></output></label><input id="innerRadius" name="innerRadius" type="range" min="0" max="10" step="0.5"></div>
-          <div class="range-field" data-control="blur"><label for="blur">Kabur <output for="blur" id="blur-value"></output></label><input id="blur" name="blur" type="range" min="0" max="32" step="1"></div>
-          <div class="range-field" data-control="darkness"><label for="darkness">Gelap <output for="darkness" id="darkness-value"></output></label><input id="darkness" name="darkness" type="range" min="35" max="95" step="1"></div>
-          <label class="color-field" data-control="frameColor" for="frameColor"><span>Warna bingkai</span><input id="frameColor" name="frameColor" type="color" value="#ffffff"></label>
-          <label class="color-field" for="textColor"><span>Warna teks</span><input id="textColor" name="textColor" type="color" value="#ffffff"></label>
         </fieldset>
 
-        <fieldset class="settings-section">
-          <legend>Identiti</legend>
-          <label class="field-label" for="brand">Jenama</label>
-          <select id="brand" name="brand">
-            <option value="IPHONE">iPhone</option>
-            <option value="FUJIFILM">Fujifilm</option>
-            <option value="DJI">DJI</option>
-            <option value="SONY">Sony</option>
-            <option value="XIAOMI">Xiaomi</option>
-            <option value="GOPRO">GoPro</option>
-            <option value="INSTA360">Insta360</option>
-            <option value="CANON">Canon</option>
-            <option value="NIKON">Nikon</option>
-            <option value="LUMIX">Lumix</option>
-            <option value="LEICA">Leica</option>
-            <option value="HASSELBLAD">Hasselblad</option>
-            <option value="CUSTOM">Teks sendiri</option>
-          </select>
-          <label class="field-label" for="camera">Kamera</label>
-          <input id="camera" name="camera" type="text" maxlength="64" placeholder="IPHONE 16 PRO">
-          <div class="logo-row">
-            <button id="upload-logo" class="pill" type="button">Logo</button>
-            <button id="remove-logo" class="text-button" type="button" hidden>Buang</button>
-          </div>
-          <label class="check-field"><input id="showBrand" name="showBrand" type="checkbox">Jenama</label>
-          <div class="range-field"><label for="textSize">Saiz teks <output for="textSize" id="textSize-value"></output></label><input id="textSize" name="textSize" type="range" min="70" max="160" step="5"></div>
-          <label class="field-label" for="caption">Kapsyen</label>
-          <input id="caption" name="caption" type="text" maxlength="90" placeholder="Pilihan">
-        </fieldset>
+        <details class="settings-group" id="advanced">
+          <summary>Lanjutan</summary>
 
-        <fieldset class="settings-section">
-          <legend>Kamera</legend>
-          <label class="check-field"><input id="showExif" name="showExif" type="checkbox">Tetapan kamera</label>
-          <div class="field-grid">
-            <div><label class="field-label" for="focal">Focal</label><input id="focal" name="focal" type="text" maxlength="20" placeholder="85mm"></div>
-            <div><label class="field-label" for="aperture">Aperture</label><input id="aperture" name="aperture" type="text" maxlength="20" placeholder="f/4"></div>
-            <div><label class="field-label" for="shutter">Shutter</label><input id="shutter" name="shutter" type="text" maxlength="20" placeholder="1/250s"></div>
-            <div><label class="field-label" for="iso">ISO</label><input id="iso" name="iso" type="text" maxlength="20" placeholder="400"></div>
-          </div>
-        </fieldset>
+          <fieldset class="settings-section">
+            <legend>Bentuk bingkai</legend>
+            <div class="range-field" data-control="radius"><label for="radius">Bucu luar <output for="radius" id="radius-value"></output></label><input id="radius" name="radius" type="range" min="0" max="8" step="0.5"></div>
+            <div class="range-field" data-control="innerRadius"><label for="innerRadius">Bucu foto <output for="innerRadius" id="innerRadius-value"></output></label><input id="innerRadius" name="innerRadius" type="range" min="0" max="10" step="0.5"></div>
+            <div class="range-field" data-control="blur"><label for="blur">Kabur <output for="blur" id="blur-value"></output></label><input id="blur" name="blur" type="range" min="0" max="32" step="1"></div>
+            <div class="range-field" data-control="darkness"><label for="darkness">Gelap <output for="darkness" id="darkness-value"></output></label><input id="darkness" name="darkness" type="range" min="35" max="95" step="1"></div>
+            <label class="color-field" data-control="frameColor" for="frameColor"><span>Warna kertas</span><input id="frameColor" name="frameColor" type="color" value="#ffffff"></label>
+            <label class="color-field" for="textColor"><span>Warna teks</span><input id="textColor" name="textColor" type="color" value="#ffffff"></label>
+          </fieldset>
 
-        <fieldset class="settings-section export-section">
-          <legend>Eksport</legend>
-          <div class="field-grid">
-            <div><label class="field-label" for="format">Format</label><select id="format" name="format"><option value="png">PNG</option><option value="jpeg">JPEG</option><option value="webp">WebP</option></select></div>
-            <div><label class="field-label" for="resolution">Saiz</label><select id="resolution" name="resolution"><option value="original">Ikut foto</option><option value="2048">2048 px</option><option value="4096">4096 px</option></select></div>
-          </div>
-          <div class="range-field"><label for="quality">Kualiti <output for="quality" id="quality-value">95%</output></label><input id="quality" name="quality" type="range" min="50" max="100" step="1" value="95"></div>
-          <button id="download" type="button" class="pill pill-strong full-width">Muat turun</button>
-          <a id="export-link" class="export-link" hidden>Simpan sekali lagi</a>
-        </fieldset>
-      </form>
+          <fieldset class="settings-section" data-section="identiti">
+            <legend>Identiti</legend>
+            <label class="field-label" for="brand">Jenama</label>
+            <select id="brand" name="brand">
+              <option value="IPHONE">iPhone</option>
+              <option value="FUJIFILM">Fujifilm</option>
+              <option value="DJI">DJI</option>
+              <option value="SONY">Sony</option>
+              <option value="XIAOMI">Xiaomi</option>
+              <option value="GOPRO">GoPro</option>
+              <option value="INSTA360">Insta360</option>
+              <option value="CANON">Canon</option>
+              <option value="NIKON">Nikon</option>
+              <option value="LUMIX">Lumix</option>
+              <option value="LEICA">Leica</option>
+              <option value="HASSELBLAD">Hasselblad</option>
+              <option value="CUSTOM">Teks sendiri</option>
+            </select>
+            <label class="field-label" for="camera">Kamera</label>
+            <input id="camera" name="camera" type="text" maxlength="64" placeholder="IPHONE 16 PRO">
+            <div class="logo-row">
+              <button id="upload-logo" class="pill" type="button">Logo</button>
+              <button id="remove-logo" class="text-button" type="button" hidden>Buang</button>
+            </div>
+            <label class="check-field"><input id="showBrand" name="showBrand" type="checkbox">Jenama</label>
+            <div class="range-field"><label for="textSize">Saiz teks <output for="textSize" id="textSize-value"></output></label><input id="textSize" name="textSize" type="range" min="70" max="160" step="5"></div>
+            <label class="field-label" for="caption">Kapsyen</label>
+            <input id="caption" name="caption" type="text" maxlength="90" placeholder="Pilihan">
+          </fieldset>
 
-      <section class="batch-section" aria-labelledby="batch-title">
-        <h2 id="batch-title">Batch</h2>
-        <label class="field-label" for="batch-metadata">Maklumat kamera</label>
-        <select id="batch-metadata">
-          <option value="auto">EXIF setiap foto</option>
-          <option value="editor">Guna tetapan editor</option>
-        </select>
-        <div class="batch-actions">
-          <button type="button" id="batch-select" class="pill">Pilih foto</button>
-          <button type="button" id="batch-clear" class="text-button" disabled>Kosongkan</button>
-        </div>
-        <p id="batch-count" class="helper"></p>
-        <div id="batch-preview-gallery" class="batch-preview-gallery" role="group" aria-label="Pratonton batch"></div>
-        <p id="batch-preview-status" class="helper" role="status" aria-live="polite"></p>
-        <details class="batch-file-details">
-          <summary>Fail dan status</summary>
-          <ol id="batch-list" class="batch-list" aria-label="Senarai foto"></ol>
+          <fieldset class="settings-section">
+            <legend>Kamera</legend>
+            <label class="check-field"><input id="showExif" name="showExif" type="checkbox">Tetapan kamera</label>
+            <div class="field-grid">
+              <div><label class="field-label" for="focal">Focal</label><input id="focal" name="focal" type="text" maxlength="20" placeholder="85mm"></div>
+              <div><label class="field-label" for="aperture">Aperture</label><input id="aperture" name="aperture" type="text" maxlength="20" placeholder="f/4"></div>
+              <div><label class="field-label" for="shutter">Shutter</label><input id="shutter" name="shutter" type="text" maxlength="20" placeholder="1/250s"></div>
+              <div><label class="field-label" for="iso">ISO</label><input id="iso" name="iso" type="text" maxlength="20" placeholder="400"></div>
+            </div>
+          </fieldset>
+
+          <fieldset class="settings-section export-section">
+            <legend>Eksport</legend>
+            <div class="field-grid">
+              <div><label class="field-label" for="format">Format</label><select id="format" name="format"><option value="png">PNG</option><option value="jpeg">JPEG</option><option value="webp">WebP</option></select></div>
+              <div><label class="field-label" for="resolution">Saiz</label><select id="resolution" name="resolution"><option value="original">Ikut foto</option><option value="2048">2048 px</option><option value="4096">4096 px</option></select></div>
+            </div>
+            <div class="range-field"><label for="quality">Kualiti <output for="quality" id="quality-value">95%</output></label><input id="quality" name="quality" type="range" min="50" max="100" step="1" value="95"></div>
+            <a id="export-link" class="export-link" hidden>Simpan sekali lagi</a>
+          </fieldset>
+
+          <section class="batch-section" aria-labelledby="batch-title">
+            <h2 id="batch-title">Batch</h2>
+            <label class="field-label" for="batch-metadata">Maklumat kamera</label>
+            <select id="batch-metadata">
+              <option value="auto">EXIF setiap foto</option>
+              <option value="editor">Guna tetapan editor</option>
+            </select>
+            <div class="batch-actions">
+              <button type="button" id="batch-select" class="pill">Pilih foto</button>
+              <button type="button" id="batch-clear" class="text-button" disabled>Kosongkan</button>
+            </div>
+            <p id="batch-count" class="helper"></p>
+            <div id="batch-preview-gallery" class="batch-preview-gallery" role="group" aria-label="Pratonton batch"></div>
+            <p id="batch-preview-status" class="helper" role="status" aria-live="polite"></p>
+            <details class="batch-file-details">
+              <summary>Fail dan status</summary>
+              <ol id="batch-list" class="batch-list" aria-label="Senarai foto"></ol>
+            </details>
+            <progress id="batch-progress" max="1" value="0" aria-label="Kemajuan batch" hidden></progress>
+            <p id="batch-status" class="helper" role="status" aria-live="polite"></p>
+            <button type="button" id="batch-run" class="pill pill-strong full-width" disabled>Proses ZIP</button>
+            <button type="button" id="batch-cancel" class="pill full-width" hidden>Hentikan</button>
+            <a id="batch-result" class="export-link" hidden>Muat turun ZIP</a>
+          </section>
+
+          <details class="storage-details">
+            <summary>Simpanan</summary>
+            <button type="button" id="clear-storage" class="text-button danger">Padam simpanan</button>
+          </details>
         </details>
-        <progress id="batch-progress" max="1" value="0" aria-label="Kemajuan batch" hidden></progress>
-        <p id="batch-status" class="helper" role="status" aria-live="polite"></p>
-        <button type="button" id="batch-run" class="pill pill-strong full-width" disabled>Proses ZIP</button>
-        <button type="button" id="batch-cancel" class="pill full-width" hidden>Hentikan</button>
-        <a id="batch-result" class="export-link" hidden>Muat turun ZIP</a>
-      </section>
-
-      <details class="storage-details">
-        <summary>Simpanan</summary>
-        <button type="button" id="clear-storage" class="text-button danger">Padam simpanan</button>
-      </details>
+      </form>
     </aside>
   </main>
-
-  <nav class="studio-nav" aria-label="Navigasi utama">
-    <button type="button" data-action="home" aria-current="page">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
-      <span>Home</span>
-    </button>
-    <button type="button" data-action="favorites">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 4 2.4 5 5.6.8-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9 5.6-.8z"/></svg>
-      <span>Favorit</span>
-    </button>
-    <button type="button" data-action="settings">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h10m4 0h2M4 17h4m4 0h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
-      <span>Setting</span>
-    </button>
-  </nav>
 
   <nav id="batch-focus-bar" class="batch-focus-bar" aria-label="Navigasi batch" hidden>
     <button id="batch-prev" type="button" aria-label="Foto sebelumnya">‹</button>

@@ -10,6 +10,8 @@
   --ease:cubic-bezier(.32,.72,0,1);
   --tap:44px;
   --sheet-height:0px;
+  /* Width of the docked inspector once the viewport can hold it beside the photo. */
+  --panel-w:clamp(340px,25vw,400px);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -28,7 +30,7 @@ a{color:inherit}
 .topbar{position:fixed;inset:0 0 auto;z-index:30;display:flex;align-items:center;gap:8px;
   height:calc(52px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 10px 0;
   background:rgba(17,17,16,.74);backdrop-filter:blur(22px) saturate(170%);border-bottom:1px solid var(--hairline)}
-.wordmark{margin-inline:auto;font-size:15px;font-weight:600;letter-spacing:.16em;white-space:nowrap}
+.wordmark{margin-inline:0;font-size:15px;font-weight:600;letter-spacing:.16em;white-space:nowrap}
 .wordmark-light{font-weight:300;color:var(--muted)}
 .topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
 .icon-button{width:var(--tap);height:var(--tap);display:grid;place-items:center;border-radius:50%;color:var(--text);transition:background .16s}
@@ -48,8 +50,8 @@ a{color:inherit}
 .export-link{display:block;margin-top:10px;font-size:13px;color:var(--accent);overflow-wrap:anywhere}
 
 /* Shell */
-.studio{position:fixed;inset:0;display:flex;padding-top:calc(52px + env(safe-area-inset-top));padding-bottom:calc(58px + env(safe-area-inset-bottom))}
-.preview-panel{flex:1;display:flex;flex-direction:column;min-height:0;padding:0 14px}
+.studio{position:fixed;inset:0;display:flex;padding-top:calc(52px + env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom)}
+.preview-panel{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;padding:0 14px}
 .preview-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;font-size:13px;color:var(--muted)}
 .preview-stage{position:relative;flex:1;min-height:0;display:grid;place-items:center;touch-action:none;overflow:hidden}
 .canvas-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
@@ -61,30 +63,31 @@ a{color:inherit}
 .save-state{margin:2px 0 8px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 
 /* Toast replaces the old always-hidden status line. */
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(70px + env(safe-area-inset-bottom));z-index:70;
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom));z-index:70;
   max-width:min(420px,90vw);margin:0;padding:10px 16px;border-radius:var(--r-m);font-size:14px;
   background:rgba(43,43,40,.96);border:1px solid var(--hairline);backdrop-filter:blur(14px)}
 .toast-error{background:rgba(72,37,30,.97);border-color:rgba(255,157,147,.4);color:#ffe2dd;top:calc(64px + env(safe-area-inset-top));bottom:auto}
 
 /* Sheets */
-.sheet{position:fixed;left:0;right:0;bottom:calc(58px + env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;flex-direction:column;
   max-height:calc(100dvh - 76px);padding:4px 18px calc(28px + env(safe-area-inset-bottom));
   background:var(--surface);border-top:1px solid var(--hairline-strong);border-radius:var(--r-l) var(--r-l) 0 0;
   box-shadow:0 -20px 60px rgba(0,0,0,.55);overflow-y:auto;overscroll-behavior:contain;
   transform:translateY(101%);visibility:hidden;transition:transform .38s var(--ease),visibility 0s linear .38s}
-body.gallery-open .template-panel,body.sheet-open .inspector{transform:translateY(0);visibility:visible;transition:transform .38s var(--ease),visibility 0s}
+body.sheet-open .inspector{transform:translateY(0);visibility:visible;transition:transform .38s var(--ease),visibility 0s}
 .sheet-grabber{flex:none;width:36px;height:5px;border-radius:3px;background:rgba(255,255,255,.22);margin:4px auto 2px}
 .sheet-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:2px 0 8px;background:var(--surface)}
 .sheet-head h1,.sheet-head h2{flex:1;margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em}
 
-/* Bottom bar: three destinations, always reachable. */
-.studio-nav{position:fixed;inset:auto 0 0;z-index:35;display:flex;height:calc(58px + env(safe-area-inset-bottom));
-  padding-bottom:env(safe-area-inset-bottom);background:rgba(17,17,16,.82);backdrop-filter:blur(24px) saturate(170%);border-top:1px solid var(--hairline)}
-.studio-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  min-height:var(--tap);font-size:11px;color:var(--muted);transition:color .16s,transform .16s}
-.studio-nav button svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.studio-nav button:active{transform:scale(.94)}
-.studio-nav button[aria-current=page]{color:var(--accent)}
+/* Collapsible group inside the settings sheet: the sheet stays short by default. */
+.settings-group{border-top:1px solid var(--hairline);margin-top:10px}
+.settings-group>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--tap);
+  font-size:15px;font-weight:600;color:var(--text);cursor:pointer;list-style:none;padding:4px 0}
+.settings-group>summary::-webkit-details-marker{display:none}
+.settings-group>summary::after{content:"";flex:none;width:8px;height:8px;margin-right:4px;
+  border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);transform:rotate(45deg);transition:transform .2s var(--ease)}
+.settings-group[open]>summary::after{transform:rotate(-135deg)}
+.settings-group[open]>summary{margin-bottom:2px}
 
 /* Fields */
 fieldset{border:0;margin:0;padding:0 0 6px;min-width:0}
@@ -127,9 +130,26 @@ dialog p{margin:0 0 16px;font-size:14px;color:var(--muted);line-height:1.5}
 /* MEDIA */
 @media(min-width:720px){
   .preview-panel{padding:0 36px}
-  .sheet{left:50%;right:auto;transform:translate(-50%,101%);width:min(620px,94vw);border-radius:var(--r-l);border:1px solid var(--hairline-strong);border-bottom:0;bottom:calc(58px + env(safe-area-inset-bottom));max-height:calc(100dvh - 88px)}
-  body.gallery-open .template-panel,body.sheet-open .inspector{transform:translate(-50%,0)}
-  .studio-nav{width:min(560px,92vw);left:50%;transform:translateX(-50%);border-radius:16px 16px 0 0;border:1px solid var(--hairline);border-bottom:0}
+  .sheet{left:50%;right:auto;transform:translate(-50%,101%);width:min(620px,94vw);border-radius:var(--r-l);border:1px solid var(--hairline-strong);max-height:calc(100dvh - 72px)}
+  body.sheet-open .inspector{transform:translate(-50%,0)}
+}
+
+/* Desktop: the inspector docks beside the photo instead of covering it. The sheet
+   chrome that only exists to open and close it (grabber, close, top-bar toggle)
+   is removed, and the floating controls re-centre over the preview column. */
+@media(min-width:1000px){
+  .studio{display:grid;grid-template-columns:minmax(0,1fr) var(--panel-w)}
+  .preview-panel{padding:0 clamp(24px,3vw,56px)}
+  .inspector{position:static;inset:auto;width:auto;max-height:none;height:100%;
+    transform:none;visibility:visible;border:0;border-left:1px solid var(--hairline-strong);
+    border-radius:0;box-shadow:none;padding:12px 22px calc(24px + env(safe-area-inset-bottom))}
+  body.sheet-open .inspector{transform:none}
+  .sheet-grabber,#sheet-close,#settings-toggle{display:none}
+  .sheet-head{position:sticky;top:0;padding:8px 0 6px;background:var(--surface)}
+  .sheet-head h2{font-size:17px}
+  .v3-manage{right:calc(var(--panel-w) + 20px)}
+  .batch-focus-bar{left:24px;right:calc(var(--panel-w) + 24px);width:auto;transform:none}
+  .toast{left:calc((100% - var(--panel-w)) / 2)}
 }
 @media(max-width:360px){
   .wordmark{font-size:13px;letter-spacing:.1em}
@@ -139,5 +159,5 @@ dialog p{margin:0 0 16px;font-size:14px;color:var(--muted);line-height:1.5}
   *{transition-duration:.01ms!important;animation-duration:.01ms!important;scroll-behavior:auto!important}
 }
 @media(prefers-reduced-transparency:reduce){
-  .topbar,.studio-nav,.toast{background:var(--surface);backdrop-filter:none}
+  .topbar,.toast{background:var(--surface);backdrop-filter:none}
 }

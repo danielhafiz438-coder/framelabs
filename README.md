@@ -1,10 +1,10 @@
 # FRAMELABS
 
-Mobile-first framing editor with a fullscreen image studio, a frame gallery sheet and bottom-sheet settings. Includes three frames: Soft Frame, On Photo, Gallery White. No accounts, backend, analytics or runtime CDNs. Designed for GitHub Pages, including repository subpaths.
+Mobile-first framing editor with a fullscreen studio, three frame chips in the toolbar and one settings sheet that stays short: the essentials first, everything else under **Lanjutan**. Includes three frames: Soft Frame, On Photo, Gallery White. No accounts, backend, analytics or runtime CDNs. Designed for GitHub Pages, including repository subpaths.
 
 ## FrameLabs v3: Unified Photo Studio
 
-The workflow is now **template gallery → native multi-file picker → in-app selection review → unified editor → export**. The in-app selection review shows numbered imported thumbnails, an ordered tray, move-left/right controls, photo removal, image preview, selected count and original file sizes. The browser cannot browse iOS Recents without the system picker; only explicitly chosen local files appear in the review.
+The workflow is now **frame chips → native multi-file picker → in-app selection review → unified editor → export**. There is a single frame switcher (the chips under the top bar) and a single export action (the **Eksport** pill), so a change never needs a second screen. The in-app selection review shows numbered imported thumbnails, an ordered tray, move-left/right controls, photo removal, image preview, selected count and original file sizes. The browser cannot browse iOS Recents without the system picker; only explicitly chosen local files appear in the review.
 
 Both one-photo and multi-photo editing use the same preview. Arrow keys and the batch bar move between photos; drag and pinch on the canvas set the crop. Use **✓ Batch** to manage the selected list. Choose **Semua foto** to apply edits globally or **Foto ini** to create a resettable photo-specific override (including text, EXIF and crop). All images use the existing render engine, EXIF logic and local decoder.
 
@@ -28,7 +28,9 @@ Open http://127.0.0.1:4173. `dist/` contains the deployable static site. `.githu
 
 ## Use
 
-Choose a style from the gallery, select a photo, then use the bottom bar: **Home** for the editor, **Favorit** for starred frames, **Setting** for every control in one scroll. **Eksport** at the top right saves the current frame. On desktop the same studio provides wide-screen previews. Frame settings are remembered separately. Camera information and captions follow the current photo across all three frames. Apple, DJI and Fujifilm logos are bundled locally; other brands use text. Upload a raster logo to use your own mark. No assets were extracted from the reference app.
+Pick a frame with the chips under the top bar, add a photo, then open **Tetapan** for Nisbah, Ketebalan and frame colour; corners, blur, identity, camera, export options and batch sit under **Lanjutan**. **Eksport** at the top right is the single export action.
+
+Below 1000 px the inspector is a bottom sheet behind the sliders button, over a full-width preview. From 1000 px up the same panel docks as a right-hand column: the photo keeps a live preview, the sheet toggle and close control disappear, and the panel scrolls on its own. No separate desktop build, no feature hidden behind a breakpoint. Frame settings are remembered separately. Camera information and captions follow the current photo across all three frames. Apple, DJI and Fujifilm logos are bundled locally; other brands use text. Upload a raster logo to use your own mark. No assets were extracted from the reference app.
 
 The flow uses the user's screenshots and official FrameCam App Store screenshots as references. It is not verified against an installed iOS app; exact picker transitions, gestures and export-result screens remain unobserved. See DESIGN.md for the evidence boundary.
 
@@ -36,7 +38,7 @@ EXIF camera make/model, focal length, aperture, shutter and ISO are read locally
 
 ## Batch processing
 
-Use **Banyak foto? Buka batch processing** below the preview, or **Pilih banyak foto** in the inspector. Select up to 30 files (300 MB combined, 40 MB for standard photos or 150 MB for RAW preview sources). Dropping multiple files also adds them to the batch. The queue can be edited before processing.
+Select several files in one picker, or use **Pilih foto** under **Lanjutan → Batch**. Select up to 30 files (300 MB combined, 40 MB for standard photos or 150 MB for RAW preview sources). Dropping multiple files also adds them to the batch. The queue can be edited before processing.
 
 The current template, frame settings, caption, custom logo, format and resolution are captured when processing starts. **Auto EXIF setiap foto** reads each file independently and leaves missing camera values blank. **Guna maklumat editor untuk semua** explicitly applies the editor's camera values to every output. A batch never overwrites the editor's current photo or camera fields.
 
@@ -51,7 +53,7 @@ Batch files and result ZIP live only in memory for the current page session. The
 ## Storage and privacy
 
 - All editing and export happen in the browser. The hosting server only serves static app files. User photos and logos are never transmitted by the app.
-- The only application persistence is localStorage: `framelabs.project.v1` (three frame settings, current frame, raster logo, camera fields), `framelabs.project.v1.photo` and `.logo` (image copies), and `framelabs.favorites.v1` (starred frames). No IndexedDB, cookies, remote database or user accounts.
+- The only application persistence is localStorage: `framelabs.project.v1` (three frame settings, current frame, raster logo, camera fields), `framelabs.project.v1.photo` and `.logo` (image copies). The favourites key from older builds (`framelabs.favorites.v1`) is no longer read or written. No IndexedDB, cookies, remote database or user accounts.
 - Saved photo copies are at most 2048 px and may be reduced further to fit storage. A copy is deleted ten minutes after it is written, and on any load past that deadline; settings remain. The original loaded photo stays in memory for export until the page closes. Originals on disk are never overwritten.
 - Failed/quota-limited storage does not prevent editing or download; the UI reports unavailable persistence.
 - GPS is not requested by the EXIF parser or written into exports. Text drawn onto the image is distinct from file EXIF: Canvas exports do not preserve the source EXIF.
