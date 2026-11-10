@@ -94,9 +94,10 @@ try{
   await page.locator('#v3-finish').click();
   await page.waitForFunction(()=>document.querySelector('#v3-selection').hidden&&window.FrameLabsV3.activeIndex>=0,{timeout:30000});
   assert.equal(await page.locator('.v3-scope').evaluate(el=>el.hidden),false,'A real batch shows the edit scope');
+  assert.equal(await page.locator('#batch-focus-bar').isVisible(),true,'A real batch keeps the stepper bar');
 
   // The focused photo is copied to storage, and that copy carries a ten minute deadline.
-  await page.waitForFunction(()=>/^\d+:\d{2}$/.test(document.querySelector('#save-state').textContent),undefined,{timeout:10000});
+  await page.waitForFunction(()=>/Salinan sementara · \d+:\d{2}$/.test(document.querySelector('#save-state').textContent),undefined,{timeout:10000});
   const deadline=Number((await stored()).photoExpiresAt);
   const remaining=deadline-Date.now();
   assert.ok(remaining>9*60*1000&&remaining<=10*60*1000,`deadline should be about ten minutes, got ${remaining}`);
@@ -175,6 +176,8 @@ try{
   await page.waitForFunction(()=>window.FrameLabsV3.items.length===1&&Boolean(window.FrameLabsV3.activeId),undefined,{timeout:15000});
   assert.equal(await page.locator('#v3-selection').isVisible(),false,'A single photo opens straight in the editor');
   await page.waitForFunction(()=>!document.body.classList.contains('v3-picking'));
+  assert.equal(await page.locator('#batch-focus-bar').isHidden(),true,'A single photo gets no 1/1 stepper bar');
+  assert.equal(await page.evaluate(()=>document.querySelector('#photo-name').textContent.includes('/')),false,'No 1/1 prefix on the caption');
 
   // RAW preview still comes from the embedded JPEG, on a worker.
   const rawWorker=await page.evaluate(async()=>{

@@ -94,7 +94,8 @@ function paintSaveState(){
   let text='';
   if(photoData&&left>0){
     const rest=Math.ceil(left/1000);
-    text=`${Math.floor(rest/60)}:${String(rest%60).padStart(2,'0')}`;
+    // A bare countdown read as a stray timestamp; label what is counting down.
+    text=`Salinan sementara · ${Math.floor(rest/60)}:${String(rest%60).padStart(2,'0')}`;
   }
   if(state.textContent!==text)state.textContent=text;
 }
@@ -162,7 +163,7 @@ function renderPreview() {
   preview.setAttribute('aria-label',comparing?'Foto asal tanpa bingkai':label);
   const source=batchFocus?{width:batchFocus.item.sourceWidth,height:batchFocus.item.sourceHeight}:img;
   const size=dimensions(source,settings);$('dimensions').textContent=`${size.width} × ${size.height} px`;
-  $('photo-name').textContent=batchFocus?`${batchFocus.index+1}/${batchQueue.length} ${batchFocus.item.file.name}`:photoName;
+  $('photo-name').textContent=batchFocus?(batchQueue.length>1?`${batchFocus.index+1}/${batchQueue.length} ${batchFocus.item.file.name}`:batchFocus.item.file.name):photoName;
 }
 
 function update() {
@@ -282,7 +283,8 @@ function discardBatchResult() {
 function updateBatchFocusBar(){
   const bar=$('batch-focus-bar');
   const index=batchFocus?batchQueue.indexOf(batchFocus.item):-1;
-  if(index<0){bar.hidden=true;return;}
+  // A single photo has nothing to step through, so it keeps the plain editor chrome.
+  if(index<0||batchQueue.length<2){bar.hidden=true;return;}
   batchFocus.index=index;bar.hidden=false;
   const topCount=document.querySelector('.studio-counter');if(topCount)topCount.textContent=`${index+1}/${batchQueue.length}`;
   $('batch-focus-count').textContent=`${index+1} / ${batchQueue.length}`;

@@ -19,7 +19,7 @@ Mobile first. One photograph, one settings sheet, one frame switcher.
 - **Lanjutan** collapses everything else (corners, blur, identity, camera, export options, batch, storage). The sheet therefore opens at roughly 480 px instead of a 2300 px scroll.
 - Below 1000 px that panel is a bottom sheet; from 1000 px up it docks as a right-hand column (`grid-template-columns: minmax(0,1fr) var(--panel-w)`), loses the grabber, the close button and the top-bar toggle, and no longer takes the pointer away from the preview. Same DOM, same engine state.
 
-No bottom navigation, no favourites list, no tool strip. No second path to the same setting: the top-right **Eksport** pill is the only export action, and the export section only holds format, size and quality.
+The photo stepper (`1 / 3`, arrows, Tutup) only appears for two or more photos; a single photo keeps the plain editor. No bottom navigation, no favourites list, no tool strip. No second path to the same setting: the top-right **Eksport** pill is the only export action, and the export section only holds format, size and quality.
 
 ## Crop
 
