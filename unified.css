@@ -43,9 +43,9 @@ body.v3-picking{overflow:hidden}
 .v3-peek-screen p{color:var(--muted);font-size:12px;word-break:break-all;text-align:center}
 
 /* Batch pill and scope control injected by unified.js */
-.v3-manage{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:33;
-  min-height:40px;padding:0 14px;border-radius:999px;background:rgba(35,35,32,.94);
-  border:1px solid var(--hairline);backdrop-filter:blur(16px);font-size:13px}
+/* The dock owns the visible Batch entry; this node stays as the click target unified.js
+   wires up, so the review grid keeps one owner and the dock can borrow it. */
+.v3-manage{position:fixed;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .v3-manage[hidden]{display:none!important}
 .v3-scope{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--hairline)}
 .v3-scope>div{display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--surface-2)}

@@ -1,4 +1,4 @@
-/* FrameLabs base: tokens, typography, controls, app shell. */
+/* FrameLabs base: tokens, typography, controls, app shell, floating dock. */
 :root{
   color-scheme:dark;
   --bg:#111110;--surface:#1a1a18;--surface-2:#232320;--stage:#0b0b0a;
@@ -6,10 +6,13 @@
   --text:#f2f2ee;--muted:#a5a59c;--accent:#e7bb79;--accent-ink:#1c1710;--danger:#ff9d93;
   --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
   --mono:ui-monospace,"SF Mono",Consolas,monospace;
-  --r-s:10px;--r-m:14px;--r-l:22px;
+  --r-s:10px;--r-m:14px;--r-l:26px;
   --ease:cubic-bezier(.32,.72,0,1);
   --tap:44px;
   --sheet-height:0px;
+  /* Height of the floating dock; the studio, the sheet and the toasts all clear it. */
+  --dock-h:64px;
+  --dock-clear:calc(var(--dock-h) + 24px + env(safe-area-inset-bottom));
   /* Width of the docked inspector once the viewport can hold it beside the photo. */
   --panel-w:clamp(340px,25vw,400px);
 }
@@ -26,13 +29,14 @@ a{color:inherit}
 .skip-link{position:fixed;left:12px;top:-80px;z-index:90;padding:10px 16px;border-radius:var(--r-m);background:var(--accent);color:var(--accent-ink);font-weight:600}
 .skip-link:focus{top:calc(8px + env(safe-area-inset-top))}
 
-/* Topbar: translucent material, hairline only where content scrolls beneath. */
-.topbar{position:fixed;inset:0 0 auto;z-index:30;display:flex;align-items:center;gap:8px;
-  height:calc(52px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 10px 0;
-  background:rgba(17,17,16,.74);backdrop-filter:blur(22px) saturate(170%);border-bottom:1px solid var(--hairline)}
+/* Topbar: one material layer over the photo, wordmark on the left, storage state on the right. */
+.topbar{position:fixed;inset:0 0 auto;z-index:30;display:flex;align-items:center;gap:12px;
+  height:calc(52px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 16px 0;
+  background:rgba(17,17,16,.72);backdrop-filter:blur(22px) saturate(170%);border-bottom:1px solid var(--hairline)}
 .wordmark{margin-inline:0;font-size:15px;font-weight:600;letter-spacing:.16em;white-space:nowrap}
 .wordmark-light{font-weight:300;color:var(--muted)}
-.topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.save-state{margin:0 0 0 auto;min-width:0;font-size:12px;line-height:1.2;color:var(--muted);
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
 .icon-button{width:var(--tap);height:var(--tap);display:grid;place-items:center;border-radius:50%;color:var(--text);transition:background .16s}
 .icon-button:hover{background:rgba(255,255,255,.07)}
 .icon-button:active{transform:scale(.94)}
@@ -50,34 +54,45 @@ a{color:inherit}
 .export-link{display:block;margin-top:10px;font-size:13px;color:var(--accent);overflow-wrap:anywhere}
 
 /* Shell */
-.studio{position:fixed;inset:0;display:flex;padding-top:calc(52px + env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom)}
+.studio{position:fixed;inset:0;display:flex;padding-top:calc(52px + env(safe-area-inset-top));padding-bottom:var(--dock-clear)}
 .preview-panel{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;padding:0 14px}
-.preview-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;font-size:13px;color:var(--muted)}
-.preview-stage{position:relative;flex:1;min-height:0;display:grid;place-items:center;touch-action:none;overflow:hidden}
+.preview-toolbar{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;font-size:13px;color:var(--muted)}
+/* The stage is a lightbox: a greyscale lift behind the photo, no hue, so the frame keeps the eye. */
+.preview-stage{position:relative;flex:1;min-height:0;display:grid;place-items:center;touch-action:none;overflow:hidden;border-radius:var(--r-m)}
+.preview-stage::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(115% 88% at 50% 36%,rgba(255,255,255,.05),rgba(255,255,255,0) 64%)}
 .canvas-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.canvas-wrap canvas{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:var(--r-s);display:block}
+/* One ring and one shadow give the photograph a card edge without adding a border weight. */
+.canvas-wrap canvas{max-width:100%;max-height:100%;width:auto;height:auto;display:block;border-radius:12px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.07),0 28px 56px -22px rgba(0,0,0,.9)}
 .drop-overlay{position:absolute;inset:8px;display:none;place-items:center;border:1px dashed var(--hairline-strong);border-radius:var(--r-m);color:var(--muted);font-size:14px;pointer-events:none}
 .preview-stage.dragging .drop-overlay{display:grid}
-.preview-caption{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted);padding:2px 2px 0}
+.preview-caption{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted);padding:8px 2px 0;font-variant-numeric:tabular-nums}
 .preview-caption span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.save-state{margin:2px 0 8px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.preview-caption span:last-child{flex:none}
 
-/* Toast replaces the old always-hidden status line. */
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom));z-index:70;
+/* Toast floats above the dock, so a confirmation never lands under the thumb. */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--dock-h) + 30px + env(safe-area-inset-bottom));z-index:70;
   max-width:min(420px,90vw);margin:0;padding:10px 16px;border-radius:var(--r-m);font-size:14px;
   background:rgba(43,43,40,.96);border:1px solid var(--hairline);backdrop-filter:blur(14px)}
 .toast-error{background:rgba(72,37,30,.97);border-color:rgba(255,157,147,.4);color:#ffe2dd;top:calc(64px + env(safe-area-inset-top));bottom:auto}
 
-/* Sheets */
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;flex-direction:column;
-  max-height:calc(100dvh - 76px);padding:4px 18px calc(28px + env(safe-area-inset-bottom));
-  background:var(--surface);border-top:1px solid var(--hairline-strong);border-radius:var(--r-l) var(--r-l) 0 0;
-  box-shadow:0 -20px 60px rgba(0,0,0,.55);overflow-y:auto;overscroll-behavior:contain;
-  transform:translateY(101%);visibility:hidden;transition:transform .38s var(--ease),visibility 0s linear .38s}
-body.sheet-open .inspector{transform:translateY(0);visibility:visible;transition:transform .38s var(--ease),visibility 0s}
-.sheet-grabber{flex:none;width:36px;height:5px;border-radius:3px;background:rgba(255,255,255,.22);margin:4px auto 2px}
-.sheet-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:2px 0 8px;background:var(--surface)}
-.sheet-head h1,.sheet-head h2{flex:1;margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em}
+/* Sheets. The sheet parks above the dock instead of under it, and the drag offset is one
+   variable so a swipe down continues into the same close curve. */
+.sheet{position:fixed;left:10px;right:10px;bottom:calc(var(--dock-h) + 16px + env(safe-area-inset-bottom));z-index:40;
+  display:flex;flex-direction:column;max-height:calc(100dvh - 76px - var(--dock-h) - 32px);padding:2px 18px 18px;
+  background:var(--surface);border:1px solid var(--hairline-strong);border-radius:var(--r-l);
+  box-shadow:0 28px 70px -18px rgba(0,0,0,.75);overflow-y:auto;overscroll-behavior:contain;
+  transform:translateY(calc(101% + var(--sheet-drag,0px)));visibility:hidden;
+  transition:transform .38s var(--ease),visibility 0s linear .38s}
+body.sheet-open .inspector{transform:translateY(var(--sheet-drag,0px));visibility:visible;transition:transform .38s var(--ease),visibility 0s}
+.inspector.sheet-dragging{transition:none}
+/* A 26px handle with a 5px bar inside it: grabbable without a hairline-wide hit area. */
+.sheet-grabber{flex:none;width:96px;height:26px;margin:0 auto;display:grid;place-items:center;touch-action:none;cursor:grab}
+.sheet-grabber::before{content:"";width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.22)}
+.sheet-grabber:active{cursor:grabbing}
+.sheet-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:0 0 8px;background:var(--surface)}
+.sheet-head h1,.sheet-head h2{flex:1;margin:0;font-size:21px;font-weight:600;letter-spacing:-.02em}
 
 /* Collapsible group inside the settings sheet: the sheet stays short by default. */
 .settings-group{border-top:1px solid var(--hairline);margin-top:10px}
@@ -92,7 +107,7 @@ body.sheet-open .inspector{transform:translateY(0);visibility:visible;transition
 /* Fields */
 fieldset{border:0;margin:0;padding:0 0 6px;min-width:0}
 fieldset[disabled]{opacity:.5}
-legend{padding:16px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}
+legend{padding:18px 0 2px;font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.01em}
 .field-label{display:block;margin:12px 0 6px;font-size:13px;color:var(--muted)}
 .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 input[type=text],select{width:100%;min-height:var(--tap);padding:0 12px;border-radius:var(--r-m);
@@ -127,16 +142,56 @@ dialog h2{margin:0 0 8px;font-size:19px;font-weight:600}
 dialog p{margin:0 0 16px;font-size:14px;color:var(--muted);line-height:1.5}
 .dialog-actions{display:flex;gap:10px;justify-content:flex-end}
 
+/* Dock: one floating glass capsule, five equal slots, the export disc raised in the middle.
+   The bubble behind an active item is the same gesture the frame chips use for selection. */
+.dock{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:38;
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:end;height:var(--dock-h);
+  padding:0 4px;border-radius:calc(var(--dock-h) / 2);
+  background:rgba(30,30,27,.72);backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.12);
+  animation:dock-in .52s var(--ease) both}
+@keyframes dock-in{from{translate:0 130%;opacity:0}to{translate:0 0;opacity:1}}
+.dock-item{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  min-height:calc(var(--dock-h) - 12px);border-radius:calc(var(--dock-h) / 2 - 8px);
+  color:var(--muted);font-size:10.5px;font-weight:600;letter-spacing:.01em;
+  transition:color .22s var(--ease),background .22s var(--ease),transform .12s var(--ease)}
+.dock-item svg{position:relative;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.dock-item:active{transform:scale(.93)}
+.dock-item[aria-pressed="true"],.dock-item[aria-expanded="true"]{color:var(--accent)}
+/* The active state is the reference's bubble: a translucent lens with a light ring behind
+   the icon, plus the accent colour, so selection reads as a lifted disc instead of a painted
+   tile. Same gesture as the selected frame chip, at the size the dock allows. */
+.dock-item[aria-pressed="true"]::before,.dock-item[aria-expanded="true"]::before{content:"";position:absolute;top:-1px;left:50%;
+  width:36px;height:36px;margin-left:-18px;border-radius:50%;
+  background:rgba(231,187,121,.13);border:1px solid rgba(231,187,121,.30);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10)}
+.dock-badge{position:absolute;top:5px;right:calc(50% - 22px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+  background:var(--accent);color:var(--accent-ink);font-size:10px;line-height:16px;font-weight:700;text-align:center}
+/* The export disc sits on the bar's top edge, so it is the nearest target to the thumb
+   and the only solid accent surface on screen. Margin, not translate: the dock's entrance
+   animation owns translate, and the two must not fight. */
+.dock-fab{display:flex;flex-direction:column;align-items:center;gap:3px;align-self:start;margin-top:-30px;
+  transition:transform .12s var(--ease)}
+.dock-disc{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+  box-shadow:0 10px 22px -8px rgba(231,187,121,.55),0 2px 0 rgba(0,0,0,.35);
+  transition:background .2s var(--ease),transform .12s var(--ease)}
+.dock-disc svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.dock-fab-label{color:var(--accent);font-size:10.5px;font-weight:600;letter-spacing:.02em}
+.dock-fab:active .dock-disc{transform:scale(.92)}
+.dock-fab:hover .dock-disc{background:#f0c98d}
+
 /* MEDIA */
 @media(min-width:720px){
   .preview-panel{padding:0 36px}
-  .sheet{left:50%;right:auto;transform:translate(-50%,101%);width:min(620px,94vw);border-radius:var(--r-l);border:1px solid var(--hairline-strong);max-height:calc(100dvh - 72px)}
-  body.sheet-open .inspector{transform:translate(-50%,0)}
+  .sheet{left:50%;right:auto;width:min(620px,94vw);max-height:calc(100dvh - 72px - var(--dock-h) - 32px);
+    transform:translate(-50%,calc(101% + var(--sheet-drag,0px)))}
+  body.sheet-open .inspector{transform:translate(-50%,var(--sheet-drag,0px))}
 }
 
-/* Desktop: the inspector docks beside the photo instead of covering it. The sheet
-   chrome that only exists to open and close it (grabber, close, top-bar toggle)
-   is removed, and the floating controls re-centre over the preview column. */
+/* Desktop: the inspector docks beside the photo instead of covering it. The sheet chrome
+   that only exists to open and close it (grabber, close, dock toggle) is removed, and the
+   dock re-centres over the preview column with four slots. */
 @media(min-width:1000px){
   .studio{display:grid;grid-template-columns:minmax(0,1fr) var(--panel-w)}
   .preview-panel{padding:0 clamp(24px,3vw,56px)}
@@ -148,17 +203,26 @@ dialog p{margin:0 0 16px;font-size:14px;color:var(--muted);line-height:1.5}
   .sheet-head{position:sticky;top:0;padding:8px 0 6px;background:var(--surface)}
   .sheet-head h2{font-size:17px}
   .preview-toolbar{justify-content:center;gap:16px}
-  .v3-manage{right:calc(var(--panel-w) + 20px)}
+  /* Pointer, not thumb: the dock goes level, so the export slot is one accent in a row
+     instead of a disc raised into the middle. */
+  .dock{grid-template-columns:repeat(4,minmax(0,1fr));left:calc((100% - var(--panel-w)) / 2);right:auto;
+    width:min(360px,calc(100% - var(--panel-w) - 40px));transform:translateX(-50%);bottom:22px}
+  .dock-fab{align-self:center;margin-top:0}
+  .dock-disc{width:40px;height:40px}
+  .dock-disc svg{width:20px;height:20px}
   .batch-focus-bar{left:24px;right:calc(var(--panel-w) + 24px);width:auto;transform:none}
   .toast{left:calc((100% - var(--panel-w)) / 2)}
 }
 @media(max-width:360px){
   .wordmark{font-size:13px;letter-spacing:.1em}
   .preview-panel{padding:0 10px}
+  .dock-item{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){
   *{transition-duration:.01ms!important;animation-duration:.01ms!important;scroll-behavior:auto!important}
+  .dock{animation:none}
 }
 @media(prefers-reduced-transparency:reduce){
-  .topbar,.toast{background:var(--surface);backdrop-filter:none}
+  .topbar,.toast,.dock{background:var(--surface);backdrop-filter:none}
+  .dock{background:var(--surface-2)}
 }

@@ -28,14 +28,16 @@ try{
   assert.ok(loaded,'Server not ready');
   await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
 
-  // One frame switcher, one settings sheet, no bottom navigation.
-  assert.equal(await page.locator('.studio-nav').count(),0,'No bottom navigation');
+  // One frame switcher, one dock, no gallery screen.
+  assert.equal(await page.locator('.dock .dock-item, .dock .dock-fab').count(),5,'The dock holds five actions');
   assert.equal(await page.locator('#gallery-toggle').count(),0,'No frame gallery button');
   assert.equal(await page.locator('.template').count(),0,'No gallery thumbnails');
   assert.equal(await page.locator('[data-frame]').count(),3,'Three frame chips');
   assert.equal(await bodyHas('gallery-open'),false);
   assert.equal(await bodyHas('sheet-open'),false,'The app opens on the editor');
-  assert.equal(await page.locator('#download').isVisible(),true,'The top bar holds the only export action');
+  assert.equal(await page.locator('#download').isVisible(),true,'The dock disc is the export action');
+  assert.equal(await page.locator('#dock-batch').isVisible(),true,'Batch has a dock slot of its own');
+  assert.equal(await page.locator('#upload-top').isVisible(),true,'Importing lives in the dock');
   assert.equal(await page.locator('#settings').isHidden(),true);
 
   // Frames switch from the editor chips alone.
@@ -64,6 +66,29 @@ try{
   await page.locator('#cropX,#cropY,#cropZoom').count().then(count=>assert.equal(count,0,'Crop is gesture driven'));
   await page.keyboard.press('Escape');
   assert.equal(await bodyHas('sheet-open'),false);
+
+  // Nothing is stacked: the sheet parks above the dock, so both stay usable at once.
+  await page.locator('#settings-toggle').click();
+  await page.waitForFunction(()=>document.body.classList.contains('sheet-open'));
+  await page.waitForTimeout(520);
+  const dockBox=await page.locator('.dock').boundingBox();
+  const sheetBox=await page.locator('.inspector').boundingBox();
+  assert.ok(sheetBox.y+sheetBox.height<=dockBox.y+1,`The sheet clears the dock: sheet ends ${sheetBox.y+sheetBox.height}, dock starts ${dockBox.y}`);
+  assert.equal(await page.locator('#download').isVisible(),true,'Export stays reachable while the sheet is open');
+
+  // A downward swipe on the grabber dismisses the sheet.
+  await page.locator('.sheet-grabber').evaluate(el=>{
+    const r=el.getBoundingClientRect(),x=Math.round(r.x+r.width/2),y=Math.round(r.y+r.height/2);
+    const ev=(type,clientY)=>el.dispatchEvent(new PointerEvent(type,{pointerId:7,clientX:x,clientY, bubbles:true,pointerType:'touch'}));
+    ev('pointerdown',y);ev('pointermove',y+70);ev('pointermove',y+180);ev('pointerup',y+180);
+  });
+  await page.waitForFunction(()=>!document.body.classList.contains('sheet-open'),undefined,{timeout:4000});
+
+  // Asal is a view toggle, not a preset: it reports its own state.
+  await page.locator('#compare').click();
+  assert.equal(await page.locator('#compare').getAttribute('aria-pressed'),'true');
+  await page.locator('#compare').click();
+  assert.equal(await page.locator('#compare').getAttribute('aria-pressed'),'false');
 
   // Import seven photos, review them, then edit.
   const samples=await page.evaluate(()=>{
@@ -219,6 +244,11 @@ try{
   assert.equal(await desktopPage.locator('#settings').isVisible(),true,'Desktop docks the inspector without opening a sheet');
   assert.equal(await desktopPage.locator('#settings-toggle').isVisible(),false,'No sheet toggle when the panel is docked');
   assert.equal(await desktopPage.locator('#sheet-close').isVisible(),false,'No close control on a docked panel');
+  assert.equal(await desktopPage.locator('.dock button:visible').count(),4,'Desktop keeps four dock slots');
+  assert.equal(await desktopPage.locator('#download').isVisible(),true,'Export stays in the dock on desktop');
+  const dockEdge=await desktopPage.locator('.dock').boundingBox();
+  const panelEdge=await desktopPage.locator('.inspector').boundingBox();
+  assert.ok(dockEdge.x+dockEdge.width<=panelEdge.x+1,'The dock stays inside the preview column');
   assert.equal(await desktopPage.locator('.preview-panel').evaluate(el=>el.inert),false,'The photo stays live beside the panel');
   const desktopPreview=await desktopPage.evaluate(()=>document.querySelector('#preview').getBoundingClientRect().width);
   assert.ok(desktopPreview>500,`Preview keeps a usable width on desktop, got ${desktopPreview}`);
@@ -239,7 +269,7 @@ try{
   await desktopPage.close();await tabletPage.close();
 
   assert.deepEqual(errors,[]);
-  console.log('PASS v3.7 one frame switcher, one export action, short settings sheet, docked desktop inspector and ten minute photo copies');
+  console.log('PASS v3.8 one frame switcher, a five slot dock with the export disc in the middle, a short sheet that parks above it, and ten minute photo copies');
 }finally{
   await page.close();await browser.close();server.kill('SIGTERM');
 }

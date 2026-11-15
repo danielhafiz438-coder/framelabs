@@ -1,14 +1,15 @@
 /* Frame chips, settings sections and batch. */
 
-/* Frame switch stays in the editor, so changing a frame never needs the gallery. */
-.frame-switch{display:flex;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
-.frame-switch button{flex:none;min-height:40px;padding:0 12px;border-radius:999px;background:var(--surface-2);border:1px solid transparent;
-  color:var(--muted);font-size:12px;white-space:nowrap;transition:color .16s,background .16s,border-color .16s}
-.frame-switch button.active{background:rgba(231,187,121,.16);border-color:rgba(231,187,121,.42);color:var(--accent);font-weight:600}
-#compare{min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--hairline);
-  background:var(--surface-2);color:var(--muted);font-size:12px;font-weight:500;transition:color .16s,background .16s,border-color .16s}
-#compare[aria-pressed=true]{background:rgba(231,187,121,.16);border-color:rgba(231,187,121,.42);color:var(--accent)}
-.zoom-badge{position:absolute;top:8px;right:8px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.6);
+/* Frame switch stays in the editor, so changing a frame never needs the gallery.
+   One capsule holds the three chips at equal width; the selected chip uses the same
+   bubble as the dock. */
+.frame-switch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;width:100%;max-width:440px;
+  padding:3px;border-radius:999px;background:rgba(255,255,255,.045);border:1px solid var(--hairline)}
+.frame-switch button{min-width:0;min-height:34px;padding:0 8px;border-radius:999px;color:var(--muted);font-size:12.5px;
+  font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:color .2s var(--ease),background .2s var(--ease)}
+.frame-switch button.active{background:rgba(231,187,121,.15);color:var(--accent);font-weight:600}
+.zoom-badge{position:absolute;top:10px;left:10px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.6);
   color:var(--text);font-size:11px;font-variant-numeric:tabular-nums;pointer-events:none}
 
 /* Crop: a compact right-aligned row under the section label. */
@@ -62,8 +63,8 @@ summary{display:flex;align-items:center;min-height:var(--tap);font-size:14px;col
 summary::-webkit-details-marker{display:none}
 .storage-details p{font-size:13px;line-height:1.5;color:var(--muted)}
 
-/* Batch focus bar */
-.batch-focus-bar{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:36;
+/* Batch focus bar clears the dock so the stepper never sits on top of navigation. */
+.batch-focus-bar{position:fixed;left:12px;right:12px;bottom:calc(var(--dock-h) + 20px + env(safe-area-inset-bottom));z-index:36;
   display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-m);
   background:rgba(35,35,32,.94);border:1px solid var(--hairline);backdrop-filter:blur(16px)}
 .batch-focus-bar button{min-width:var(--tap);min-height:36px;border-radius:10px;background:var(--surface-2);font-size:18px}
