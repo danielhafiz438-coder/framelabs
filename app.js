@@ -36,7 +36,7 @@ function error(text) {$('error').textContent=text;$('error').hidden=!text;}
 function setBusy(value) {
   busy=value;
   if(value)batchFocusRequest++;
-  for(const id of ['download','upload-top','upload-logo','clear-storage','reset','compare','remove-logo','batch-select']) if($(id))$(id).disabled=value;
+  for(const id of ['download','upload-top','upload-logo','clear-storage','reset','compare','remove-logo','batch-select','dock-batch']) if($(id))$(id).disabled=value;
   for(const fieldset of form.querySelectorAll('fieldset'))fieldset.disabled=value;
   for(const button of document.querySelectorAll('[data-template]'))button.disabled=value;
   for(const chip of document.querySelectorAll('[data-frame]'))chip.disabled=value;

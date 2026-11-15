@@ -21,15 +21,7 @@
 
   <header class="topbar">
     <span class="wordmark">FRAME<span class="wordmark-light">LABS</span></span>
-    <div class="topbar-actions">
-      <button id="upload-top" class="icon-button" type="button" aria-label="Pilih foto">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>
-      </button>
-      <button id="settings-toggle" class="icon-button" type="button" aria-label="Tetapan" aria-expanded="false" aria-controls="settings-sheet">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h10m4 0h2M4 17h4m4 0h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
-      </button>
-      <button id="download" class="pill pill-strong" type="button">Eksport</button>
-    </div>
+    <p id="save-state" class="save-state" role="status"></p>
   </header>
 
   <main class="studio" id="editor">
@@ -40,7 +32,6 @@
           <button type="button" data-frame="overlay" aria-pressed="false">On Photo</button>
           <button type="button" data-frame="white" aria-pressed="false">Gallery White</button>
         </div>
-        <button id="compare" class="text-button" type="button" aria-pressed="false">Sebelum</button>
       </div>
       <div class="preview-stage" id="drop-zone">
         <div class="canvas-wrap"><canvas id="preview" width="1200" height="850" role="img" aria-label="Pratonton foto dengan bingkai"></canvas></div>
@@ -48,9 +39,6 @@
         <span id="zoom-badge" class="zoom-badge" hidden></span>
       </div>
       <div class="preview-caption"><span id="photo-name"></span><span id="dimensions"></span></div>
-      <p id="save-state" class="save-state" role="status"></p>
-      <p id="status" class="toast" role="status" aria-live="polite" hidden></p>
-      <p id="error" class="toast toast-error" role="alert" hidden></p>
     </section>
 
     <aside class="sheet inspector" id="settings-sheet" aria-label="Tetapan">
@@ -181,6 +169,37 @@
       </form>
     </aside>
   </main>
+
+  <!-- Status toasts live outside the panel: the panel goes inert while the sheet is open,
+       and an inert subtree cannot announce a live region. -->
+  <p id="status" class="toast" role="status" aria-live="polite" hidden></p>
+  <p id="error" class="toast toast-error" role="alert" hidden></p>
+
+  <!-- Floating dock: the five actions that belong under the thumb. The centre disc is
+       the single export action; Tetapan and Asal carry their own pressed state. -->
+  <nav class="dock" aria-label="Navigasi utama">
+    <button id="upload-top" class="dock-item" type="button" aria-label="Pilih foto">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9" r="1.5"/><path d="m3.5 16.5 5-5 4 4 3-3 5 5"/></svg>
+      <span>Foto</span>
+    </button>
+    <button id="compare" class="dock-item" type="button" aria-pressed="false" aria-label="Tunjuk foto asal tanpa bingkai">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+      <span>Asal</span>
+    </button>
+    <button id="download" class="dock-fab" type="button" aria-label="Eksport foto">
+      <span class="dock-disc"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4.5v10"/><path d="m7.8 10.4 4.2 4.2 4.2-4.2"/><path d="M5 19h14"/></svg></span>
+      <span class="dock-fab-label">Eksport</span>
+    </button>
+    <button id="settings-toggle" class="dock-item" type="button" aria-label="Tetapan" aria-expanded="false" aria-controls="settings-sheet">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h9.3m4.4 0H20M4 17h3.3m4.4 0H20"/><circle cx="15.5" cy="7" r="2.2"/><circle cx="9.5" cy="17" r="2.2"/></svg>
+      <span>Tetapan</span>
+    </button>
+    <button id="dock-batch" class="dock-item" type="button" aria-label="Batch">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3.5" y="8" width="12" height="12" rx="2.5"/><path d="M8 4.5h9.5A2.5 2.5 0 0 1 20 7v9.5"/></svg>
+      <span>Batch</span>
+      <b class="dock-badge" hidden></b>
+    </button>
+  </nav>
 
   <nav id="batch-focus-bar" class="batch-focus-bar" aria-label="Navigasi batch" hidden>
     <button id="batch-prev" type="button" aria-label="Foto sebelumnya">‹</button>
